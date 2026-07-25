@@ -35,8 +35,9 @@ export default function LoginPage() {
       await login(data.email, data.password);
       toast.success("Welcome back!");
       router.push("/");
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Login failed");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

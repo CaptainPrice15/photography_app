@@ -69,3 +69,16 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
 export type PhotoFilterInput = z.infer<typeof photoFilterSchema>;
+
+export const checkoutSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  full_name: z.string().min(1, "Full name is required"),
+  address: z.string().min(1, "Address is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  postal_code: z.string().min(1, "Postal code is required"),
+  country: z.string().min(1, "Country is required"),
+  payment_provider: z.enum(["stripe", "paypal", "razorpay"]),
+});
+
+export type CheckoutInput = z.infer<typeof checkoutSchema>;

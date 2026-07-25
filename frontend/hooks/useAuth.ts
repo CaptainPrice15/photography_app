@@ -47,5 +47,9 @@ export function useAuth() {
     window.location.href = "/";
   }, [storeLogout]);
 
-  return { user, isAuthenticated, isLoading, login, register, logout };
+  const verifyEmail = useCallback(async (token: string) => {
+    await api.post("/auth/verify-email", { token });
+  }, []);
+
+  return { user, isAuthenticated, isLoading, login, register, logout, verifyEmail };
 }
