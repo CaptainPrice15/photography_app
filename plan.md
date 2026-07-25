@@ -1,5 +1,24 @@
 # Photo Exhibition Web Application — Complete Build Plan
 
+## Build Progress
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Project Scaffolding | ✅ COMPLETED |
+| 2 | Core Backend (Models, Repos, Services, API Routes) | ✅ COMPLETED |
+| 3 | Storage & Image Processing (pCloud, EXIF, Thumbnails) | ✅ COMPLETED |
+| 4 | Payment Integration (Stripe, PayPal, Razorpay) | ✅ COMPLETED |
+| 5 | Frontend Layout & Navigation | ✅ COMPLETED (in Phase 1) |
+| 6 | Frontend Public Pages (Home, Gallery, Albums, Exhibitions) | ⬜ PENDING |
+| 7 | Frontend Auth & User Pages (Login, Register, Profile, Cart) | ⬜ PENDING |
+| 8 | Frontend Admin Dashboard | ⬜ PENDING |
+| 9 | Shared Components & Polish (Animations, SEO, Loading) | ⬜ PENDING |
+| 10 | Testing & Deployment (Tests, Docker, Vercel/Render) | ⬜ PENDING |
+
+**Files Created:** ~175 | **Files Remaining:** ~85 | **Backend:** ~95% complete | **Frontend:** ~30% complete
+
+---
+
 ## 1. Architecture Overview
 
 ```
@@ -977,29 +996,31 @@ PUT    /admin/users/:id/status     Activate/deactivate user
 | 84-95 | `backend/app/schemas/*.py` | All schema files | ✅ |
 | 96-107 | `backend/app/api/v1/*.py` | All API route files | ✅ |
 
-### Phase 3: Storage & Image Processing (Files 108-113)
+### Phase 3: Storage & Image Processing (Files 108-113) ✅ COMPLETED
 **Goal:** pCloud integration, EXIF extraction, thumbnail generation.
+**Status:** All 8 files created.
 
-| # | File | Purpose |
-|---|------|---------|
-| 108 | `backend/app/storage/storage_interface.py` | Abstract StorageInterface |
-| 109 | `backend/app/storage/pcloud.py` | pCloud client |
-| 110 | `backend/app/utils/exif.py` | EXIF extraction |
-| 111 | `backend/app/utils/image.py` | Image optimization |
-| 112 | `backend/app/services/image_processor.py` | Processing pipeline |
-| 113 | `backend/app/services/upload_service.py` | Multi-file upload |
+| # | File | Purpose | Status |
+|---|------|---------|--------|
+| 108 | `backend/app/storage/storage_interface.py` | Abstract StorageInterface | ✅ |
+| 109 | `backend/app/storage/pcloud.py` | pCloud client | ✅ |
+| 110 | `backend/app/utils/exif.py` | EXIF extraction | ✅ |
+| 111 | `backend/app/utils/image.py` | Image optimization | ✅ |
+| 112 | `backend/app/services/image_processor.py` | Processing pipeline | ✅ |
+| 113 | `backend/app/services/upload_service.py` | Multi-file upload | ✅ |
 
-### Phase 4: Payment Integration (Files 114-126)
+### Phase 4: Payment Integration (Files 114-126) ✅ COMPLETED
 **Goal:** All 3 payment providers, checkout, webhooks, downloads.
+**Status:** All 6 files created.
 
-| # | File | Purpose |
-|---|------|---------|
-| 114 | `backend/app/payments/base.py` | Abstract PaymentProvider |
-| 115 | `backend/app/payments/stripe_provider.py` | Stripe integration |
-| 116 | `backend/app/payments/paypal_provider.py` | PayPal integration |
-| 117 | `backend/app/payments/razorpay_provider.py` | Razorpay integration |
-| 118 | `backend/app/services/order_service.py` | Order + payment orchestration |
-| 119 | `backend/app/services/download_service.py` | Signed download tokens |
+| # | File | Purpose | Status |
+|---|------|---------|--------|
+| 114 | `backend/app/payments/base.py` | Abstract PaymentProvider | ✅ |
+| 115 | `backend/app/payments/stripe_provider.py` | Stripe integration | ✅ |
+| 116 | `backend/app/payments/paypal_provider.py` | PayPal integration | ✅ |
+| 117 | `backend/app/payments/razorpay_provider.py` | Razorpay integration | ✅ |
+| 118 | `backend/app/services/order_service.py` | Order + payment orchestration | ✅ |
+| 119 | `backend/app/services/download_service.py` | Signed download tokens | ✅ |
 
 ### Phase 5: Frontend Layout & Navigation (Files 120-136) ✅ COMPLETED
 **Goal:** Responsive navbar, footer, dark mode, routing.
