@@ -1,0 +1,12 @@
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.env
+*.db
+.git
+.gitignore
+README.md
+alembic/versions/*.pyc
+test.db
