@@ -10,7 +10,7 @@
 | 4 | Payment Integration (Stripe, PayPal, Razorpay) | ✅ COMPLETED |
 | 5 | Frontend Layout & Navigation | ✅ COMPLETED (in Phase 1) |
 | 6 | Frontend Public Pages (Home, Gallery, Albums, Exhibitions) | ✅ COMPLETED |
-| 7 | Frontend Auth & User Pages (Login, Register, Profile, Cart) | ⬜ PENDING |
+| 7 | Frontend Auth & User Pages (Login, Register, Profile, Cart) | ✅ COMPLETED |
 | 8 | Frontend Admin Dashboard | ✅ COMPLETED |
 | 9 | Shared Components & Polish (Animations, SEO, Loading) | ✅ COMPLETED |
 | 10 | Testing & Deployment (Tests, Docker, Vercel/Render) | ⬜ PENDING |
