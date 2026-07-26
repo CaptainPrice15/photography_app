@@ -31,9 +31,16 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    toast.success("Settings saved successfully!");
-    setIsSaving(false);
+    try {
+      // TODO: Add settings API endpoint to backend
+      // await api.put("/admin/settings", settings);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      toast.success("Settings saved successfully!");
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

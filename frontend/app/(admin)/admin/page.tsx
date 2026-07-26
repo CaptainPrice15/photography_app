@@ -1,17 +1,66 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Camera, Users, ShoppingCart, Download, TrendingUp, DollarSign } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { AnalyticsCards } from "@/components/admin/AnalyticsCards";
+import { SalesChart } from "@/components/admin/SalesChart";
+import { ActivityLog } from "@/components/admin/ActivityLog";
+import api from "@/lib/api";
 
-const STATS = [
-  { title: "Total Photos", value: "524", icon: Camera, change: "+12%" },
-  { title: "Total Users", value: "1,234", icon: Users, change: "+8%" },
-  { title: "Total Orders", value: "89", icon: ShoppingCart, change: "+23%" },
-  { title: "Total Revenue", value: "$4,567", icon: DollarSign, change: "+15%" },
-];
+interface DashboardData {
+  overview: {
+    total_photos: number;
+    total_albums: number;
+    total_exhibitions: number;
+    total_users: number;
+    total_orders: number;
+    total_revenue: number;
+    total_downloads: number;
+    total_views: number;
+  };
+  sales_chart: { date: string; amount: number; count: number }[];
+  top_photos: Array<{
+    photo_id: string;
+    title: string;
+    views: number;
+    downloads: number;
+    revenue: number;
+  }>;
+  recent_orders: Array<{
+    id: string;
+    order_number: string;
+    total_amount: number;
+    created_at: string;
+  }>;
+}
 
 export default function AdminDashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const { data } = await api.get("/analytics/dashboard");
+        setData(data);
+      } catch {
+        // Fallback to empty state
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -19,52 +68,54 @@ export default function AdminDashboardPage() {
         <p className="text-muted-foreground">Welcome to the admin dashboard</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <p className="text-xs text-green-500 mt-1">{stat.change}</p>
-                  </div>
-                  <stat.icon className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+      <AnalyticsCards stats={data?.overview} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SalesChart data={data?.sales_chart || []} title="Revenue Over Time" />
+
+        <ActivityLog
+          title="Recent Orders"
+          activities={(data?.recent_orders || []).map((order) => ({
+            id: order.id,
+            type: "order_placed" as const,
+            message: `Order ${order.order_number} — $${order.total_amount}`,
+            created_at: order.created_at,
+          }))}
+        />
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
+      {data?.top_photos && data.top_photos.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="rounded-lg border bg-card p-6">
+            <h2 className="text-lg font-semibold mb-4">Top Performing Photos</h2>
+            <div className="space-y-3">
+              {data.top_photos.map((photo, index) => (
+                <div
+                  key={photo.photo_id || index}
+                  className="flex items-center gap-4"
+                >
+                  <span className="text-sm font-medium text-muted-foreground w-6">
+                    #{index + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{photo.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {photo.views} views · {photo.downloads} downloads
+                    </p>
+                  </div>
+                  <span className="text-sm font-medium">
+                    ${photo.revenue?.toFixed(2) || "0.00"}
+                  </span>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm">New photo uploaded</p>
-                  <p className="text-xs text-muted-foreground">2 hours ago</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </motion.div>
+      )}
     </div>
   );
 }

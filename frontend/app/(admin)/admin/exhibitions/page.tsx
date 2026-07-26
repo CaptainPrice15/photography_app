@@ -1,68 +1,78 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
-import { Plus, Search, Edit, Trash2, MoreVertical, Calendar, MapPin, Globe, Image as ImageIcon } from "lucide-react";
+import { Plus, Search, Edit, Trash2, MoreVertical, MapPin, Globe, Calendar, Image as ImageIcon } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import Link from "next/link";
-import { useState } from "react";
-import { format, formatDistanceToNow } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import type { Exhibition } from "@/lib/types";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function ExhibitionsPage() {
-  const [exhibitions, setExhibitions] = useState([
-    {
-      id: "1",
-      title: "Nature's Canvas",
-      venue: "City Art Gallery",
-      location: "New York, NY",
-      start_date: "2025-01-15",
-      end_date: "2025-03-15",
-      is_virtual: false,
-      is_published: true,
-      photo_count: 24,
-    },
-    {
-      id: "2",
-      title: "Urban Perspectives",
-      venue: "Modern Art Museum",
-      location: "Los Angeles, CA",
-      start_date: "2025-04-01",
-      end_date: "2025-06-30",
-      is_virtual: true,
-      exhibition_url: "https://virtual.exhibit/urban",
-      is_published: true,
-      photo_count: 18,
-    },
-    {
-      id: "3",
-      title: "Wildlife Wonders",
-      venue: "National History Museum",
-      location: "Washington, DC",
-      start_date: "2025-07-01",
-      end_date: "2025-09-30",
-      is_virtual: false,
-      is_published: false,
-      photo_count: 32,
-    },
-  ]);
+  const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [search, setSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const debouncedSearch = useDebounce(search, 500);
 
-  const filteredExhibitions = exhibitions.filter(
-    (e) => e.title.toLowerCase().includes(search.toLowerCase()) || e.venue.toLowerCase().includes(search.toLowerCase())
-  );
+  const fetchExhibitions = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params: Record<string, any> = {};
+      if (debouncedSearch) params.search = debouncedSearch;
 
-  const getStatus = (ex: typeof exhibitions[0]) => {
+      const { data } = await api.get("/exhibitions", { params });
+      const items = data.items || data;
+      setExhibitions(Array.isArray(items) ? items : []);
+    } catch {
+      toast.error("Failed to load exhibitions");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    fetchExhibitions();
+  }, [fetchExhibitions]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this exhibition?")) return;
+    try {
+      await api.delete(`/exhibitions/${id}`);
+      toast.success("Exhibition deleted");
+      fetchExhibitions();
+    } catch {
+      toast.error("Failed to delete exhibition");
+    }
+  };
+
+  const getStatus = (ex: Exhibition) => {
     const now = new Date();
     const start = new Date(ex.start_date);
-    const end = new Date(ex.end_date);
-    
+    const end = ex.end_date ? new Date(ex.end_date) : null;
+
     if (!ex.is_published) return { label: "Draft", variant: "secondary" as const };
     if (now < start) return { label: "Upcoming", variant: "default" as const };
-    if (now > end) return { label: "Ended", variant: "outline" as const };
+    if (end && now > end) return { label: "Ended", variant: "outline" as const };
     return { label: "Active", variant: "default" as const };
   };
 
@@ -100,25 +110,32 @@ export default function ExhibitionsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cover</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Venue / Location</TableHead>
                   <TableHead>Dates</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Photos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredExhibitions.length === 0 ? (
+                {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        <span>Loading...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : exhibitions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No exhibitions found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredExhibitions.map((ex, index) => {
+                  exhibitions.map((ex, index) => {
                     const status = getStatus(ex);
                     return (
                       <motion.tr
@@ -127,25 +144,25 @@ export default function ExhibitionsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                       >
-                        <TableCell className="w-20">
-                          <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden relative">
-                            <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto my-auto" />
-                          </div>
-                        </TableCell>
                         <TableCell>
                           <p className="font-medium truncate max-w-xs">{ex.title}</p>
                         </TableCell>
                         <TableCell>
-                          <p className="font-medium">{ex.venue}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {ex.location}
-                          </p>
+                          {ex.venue && <p className="font-medium">{ex.venue}</p>}
+                          {ex.location && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {ex.location}
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell>
-                          <p className="flex items-center gap-1">
+                          <p className="flex items-center gap-1 text-sm">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(ex.start_date), "MMM d, yyyy")} - {format(new Date(ex.end_date), "MMM d, yyyy")}
+                            {format(new Date(ex.start_date), "MMM d, yyyy")}
+                            {ex.end_date && (
+                              <> - {format(new Date(ex.end_date), "MMM d, yyyy")}</>
+                            )}
                           </p>
                         </TableCell>
                         <TableCell>
@@ -163,7 +180,6 @@ export default function ExhibitionsPage() {
                             )}
                           </Badge>
                         </TableCell>
-                        <TableCell>{ex.photo_count} photos</TableCell>
                         <TableCell>
                           <Badge variant={status.variant}>{status.label}</Badge>
                         </TableCell>
@@ -175,19 +191,18 @@ export default function ExhibitionsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.location.href = `/exhibitions/${ex.id}`}>
                                 <ImageIcon className="h-4 w-4 mr-2" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => console.log("Edit", ex.id)}>
+                              <DropdownMenuItem onClick={() => window.location.href = `/admin/exhibitions/${ex.id}`}>
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => console.log("Manage Photos", ex.id)}>
-                                <ImageIcon className="h-4 w-4 mr-2" />
-                                Manage Photos
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => console.log("Delete", ex.id)} className="text-red-500">
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(ex.id)}
+                                className="text-red-500"
+                              >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
                               </DropdownMenuItem>
@@ -196,9 +211,8 @@ export default function ExhibitionsPage() {
                         </TableCell>
                       </motion.tr>
                     );
-                  }
-                )
-              )}
+                  })
+                )}
               </TableBody>
             </Table>
           </div>

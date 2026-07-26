@@ -13,19 +13,55 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "PhotoExhibit - Photography Portfolio & Marketplace",
     template: "%s | PhotoExhibit",
   },
-  description: "Showcase, organize, and sell your photography. Browse stunning photographs, collections, and exhibitions.",
-  keywords: ["photography", "photos", "gallery", "exhibition", "portfolio", "marketplace"],
+  description:
+    "Showcase, organize, and sell your photography. Browse stunning photographs, curated collections, and virtual exhibitions.",
+  keywords: [
+    "photography",
+    "photos",
+    "gallery",
+    "exhibition",
+    "portfolio",
+    "marketplace",
+    "fine art photography",
+    "photo prints",
+  ],
   authors: [{ name: "PhotoExhibit" }],
+  creator: "PhotoExhibit",
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "PhotoExhibit",
+    title: "PhotoExhibit - Photography Portfolio & Marketplace",
+    description:
+      "Showcase, organize, and sell your photography. Browse stunning photographs, curated collections, and virtual exhibitions.",
+    url: siteUrl,
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "PhotoExhibit - Photography Portfolio & Marketplace",
+    description:
+      "Showcase, organize, and sell your photography. Browse stunning photographs, curated collections, and virtual exhibitions.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

@@ -1,39 +1,102 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "motion/react";
-import { Plus, Search, Edit, Trash2, Image, MoreVertical, Camera, ArrowUpDown, Filter, Star, Eye } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { formatCurrency } from "@/lib/utils";
-
-interface Photo {
-  id: string;
-  title: string;
-  thumbnail_url?: string;
-  category_id?: string;
-  price: number;
-  is_free: boolean;
-  is_published: boolean;
-  is_featured: boolean;
-  camera_model?: string;
-}
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { toast } from "sonner";
+import { PhotoTable } from "@/components/admin/PhotoTable";
+import api from "@/lib/api";
+import type { Photo } from "@/lib/types";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function PhotosPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const limit = 10;
+  const debouncedSearch = useDebounce(search, 500);
+
+  const fetchPhotos = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params: Record<string, any> = { page, limit };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (status === "published") params.is_published = true;
+      if (status === "draft") params.is_published = false;
+      if (status === "featured") params.is_featured = true;
+
+      const { data } = await api.get("/photos", { params });
+      const items = data.items || data;
+      setPhotos(Array.isArray(items) ? items : []);
+      setTotal(data.total || items.length || 0);
+      setPages(data.pages || 1);
+    } catch {
+      toast.error("Failed to load photos");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, debouncedSearch, status]);
+
+  useEffect(() => {
+    fetchPhotos();
+  }, [fetchPhotos]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this photo?")) return;
+    try {
+      await api.delete(`/photos/${id}`);
+      toast.success("Photo deleted");
+      fetchPhotos();
+    } catch {
+      toast.error("Failed to delete photo");
+    }
+  };
+
+  const handleTogglePublished = async (id: string, published: boolean) => {
+    try {
+      await api.put(`/photos/${id}`, { is_published: published });
+      toast.success(published ? "Photo published" : "Photo unpublished");
+      fetchPhotos();
+    } catch {
+      toast.error("Failed to update photo");
+    }
+  };
+
+  const handleToggleFeatured = async (id: string, featured: boolean) => {
+    try {
+      await api.put(`/photos/${id}`, { is_featured: featured });
+      toast.success(featured ? "Photo featured" : "Photo unfeatured");
+      fetchPhotos();
+    } catch {
+      toast.error("Failed to update photo");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -88,91 +151,13 @@ export default function PhotosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        <span>Loading...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : photos.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No photos found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  photos.map((photo, index) => (
-                    <motion.tr
-                      key={photo.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <TableCell className="w-20">
-                        <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden relative">
-                          {photo.thumbnail_url ? (
-                            <img src={photo.thumbnail_url} alt={photo.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <Image className="h-8 w-8 text-muted-foreground mx-auto my-auto" />
-                          )}
-                          {photo.is_featured && (
-                            <Star className="absolute top-1 right-1 h-4 w-4 text-yellow-500 fill-yellow-500" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <p className="font-medium truncate max-w-xs">{photo.title}</p>
-                        <p className="text-xs text-muted-foreground">{photo.camera_model || "No camera info"}</p>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{photo.category_id || "Uncategorized"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {photo.is_free ? (
-                          <span className="text-green-600 font-medium">Free</span>
-                        ) : photo.price ? (
-                          <span className="font-medium">{formatCurrency(photo.price)}</span>
-                        ) : (
-                          <span className="text-muted-foreground">Not for sale</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={photo.is_published ? "default" : "secondary"}>
-                            {photo.is_published ? "Published" : "Draft"}
-                          </Badge>
-                          {photo.is_featured && <Badge variant="default" className="bg-yellow-100 text-yellow-800">Featured</Badge>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => console.log("View", photo.id)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => console.log("Edit", photo.id)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => console.log("Delete", photo.id)} className="text-red-500">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </motion.tr>
-                  ))
-                )}
+                <PhotoTable
+                  photos={photos}
+                  isLoading={isLoading}
+                  onDelete={handleDelete}
+                  onTogglePublished={handleTogglePublished}
+                  onToggleFeatured={handleToggleFeatured}
+                />
               </TableBody>
             </Table>
           </div>
@@ -180,35 +165,28 @@ export default function PhotosPage() {
           {pages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
-                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} photos
+                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of{" "}
+                {total} photos
               </div>
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setPage(page - 1)}
-                    />
+                    <PaginationPrevious onClick={() => setPage(Math.max(1, page - 1))} />
                   </PaginationItem>
+                  {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
+                    const start = Math.max(1, Math.min(page - 2, pages - 4));
+                    const p = start + i;
+                    if (p > pages) return null;
+                    return (
+                      <PaginationItem key={p}>
+                        <PaginationLink isActive={page === p} onClick={() => setPage(p)}>
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
                   <PaginationItem>
-                    <PaginationEllipsis />
-                  </PaginationItem>
-                  {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-                    <PaginationItem key={p}>
-                      <PaginationLink
-                        isActive={page === p}
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationEllipsis />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => setPage(page + 1)}
-                    />
+                    <PaginationNext onClick={() => setPage(Math.min(pages, page + 1))} />
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
