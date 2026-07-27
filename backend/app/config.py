@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # pCloud
+    PCLOUD_EMAIL: str = ""
+    PCLOUD_PASSWORD: str = ""
     PCLOUD_ACCESS_TOKEN: str = ""
     PCLOUD_FOLDER_ID: int = 0
 
