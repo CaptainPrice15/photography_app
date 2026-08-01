@@ -4,12 +4,21 @@ import { motion } from "motion/react";
 import { PhotoCard } from "./PhotoCard";
 import type { Photo } from "@/lib/types";
 
+export type PhotoItem = Partial<Photo> & {
+  id: string;
+  title: string;
+  thumbnail_url?: string;
+  original_url?: string;
+  is_free?: boolean;
+  price?: number;
+};
+
 interface PhotoGridProps {
-  photos: Photo[];
+  photos: PhotoItem[];
   columns?: 2 | 3 | 4;
   onFavourite?: (id: string) => void;
   onAddToCart?: (id: string) => void;
-  onOpenLightbox?: (photo: Photo) => void;
+  onOpenLightbox?: (photo: any) => void;
 }
 
 export function PhotoGrid({

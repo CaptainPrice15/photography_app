@@ -9,13 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoomPreviewModal } from "@/components/photo/RoomPreviewModal";
 import { formatCurrency } from "@/lib/utils";
-import type { Photo } from "@/lib/types";
+import type { PhotoItem } from "./PhotoGrid";
 
 interface PhotoCardProps {
-  photo: Photo;
+  photo: PhotoItem;
   onFavourite?: (id: string) => void;
   onAddToCart?: (id: string) => void;
-  onOpenLightbox?: (photo: Photo) => void;
+  onOpenLightbox?: (photo: any) => void;
 }
 
 export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: PhotoCardProps) {
@@ -24,6 +24,7 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
 
   const displayPrice = photo.price ?? 25;
   const imageSrc = photo.thumbnail_url || photo.original_url || "/images/placeholder.jpg";
+  const isFree = photo.is_free ?? false;
 
   return (
     <>
@@ -93,7 +94,7 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
               <Sparkles className="h-4 w-4 text-amber-400" />
             </Button>
 
-            {!photo.is_free && (
+            {!isFree && (
               <Button
                 size="icon"
                 variant="secondary"
@@ -121,7 +122,7 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
 
           {/* Price Tag */}
           <div className="absolute top-3 right-3 z-10">
-            {photo.is_free ? (
+            {isFree ? (
               <Badge className="bg-emerald-500/90 text-white text-[10px] font-bold uppercase backdrop-blur-md border border-emerald-400/30">
                 Free
               </Badge>
