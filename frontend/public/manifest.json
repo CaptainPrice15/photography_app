@@ -1,0 +1,16 @@
+{
+  "name": "PhotoExhibit — Fine Art Photography Portfolio & Marketplace",
+  "short_name": "PhotoExhibit",
+  "description": "Showcase, organize, and sell fine art photography. Browse stunning photographs, curated collections, and virtual exhibitions.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0C0E",
+  "theme_color": "#D4AF37",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
