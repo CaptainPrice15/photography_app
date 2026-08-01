@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,6 +8,7 @@ import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
 interface Photo {
   id: string;
@@ -21,16 +23,22 @@ interface FeaturedPhotosProps {
   photos?: Photo[];
 }
 
-const MOCK_PHOTOS: Photo[] = [
-  { id: "1", title: "Mountain Sunrise", thumbnail_url: "/images/placeholder.jpg", category: "Landscapes", is_free: false, price: 49.99 },
-  { id: "2", title: "Urban Street", thumbnail_url: "/images/placeholder.jpg", category: "Street", is_free: true },
-  { id: "3", title: "Portrait Study", thumbnail_url: "/images/placeholder.jpg", category: "Portraits", is_free: false, price: 39.99 },
-  { id: "4", title: "Ocean Waves", thumbnail_url: "/images/placeholder.jpg", category: "Nature", is_free: false, price: 59.99 },
-  { id: "5", title: "City Lights", thumbnail_url: "/images/placeholder.jpg", category: "Street", is_free: true },
-  { id: "6", title: "Forest Path", thumbnail_url: "/images/placeholder.jpg", category: "Nature", is_free: false, price: 44.99 },
-];
+export function FeaturedPhotos({ photos: propPhotos }: FeaturedPhotosProps) {
+  const [photos, setPhotos] = useState<Photo[]>(propPhotos || []);
 
-export function FeaturedPhotos({ photos = MOCK_PHOTOS }: FeaturedPhotosProps) {
+  useEffect(() => {
+    if (propPhotos) return;
+    api.get("/photos/featured").then(({ data }) => {
+      const items = Array.isArray(data) ? data : data.items || [];
+      setPhotos(items.map((p: any) => ({
+        id: p.id,
+        title: p.title || p.alt || "",
+        thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
+        category: p.collectionId || undefined,
+        is_free: true,
+      })));
+    }).catch(() => {});
+  }, [propPhotos]);
   return (
     <section className="py-20 px-4">
       <div className="container mx-auto">

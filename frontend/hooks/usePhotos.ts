@@ -36,8 +36,16 @@ export function usePhotos(options: UsePhotosOptions = {}) {
         if (sort) params.set("sort", sort);
         if (featured) params.set("featured", "true");
 
-        const { data } = await api.get(`/photos?${params.toString()}`);
-        setData(data);
+        const { data } = await api.get(`/photos/all?${params.toString()}`);
+        // Backend returns an array; wrap in paginated format
+        const photos = Array.isArray(data) ? data : data.items || data.results || [];
+        setData({
+          items: photos,
+          total: photos.length,
+          page,
+          limit,
+          pages: Math.ceil(photos.length / limit),
+        });
       } catch (err) {
         setError("Failed to fetch photos");
       } finally {

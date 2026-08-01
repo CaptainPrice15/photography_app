@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { PhotoGrid, PhotoFilters } from "@/components/gallery";
 import { useDebounce } from "@/hooks/useDebounce";
+import api from "@/lib/api";
 
 interface Photo {
   id: string;
@@ -16,66 +17,58 @@ interface Photo {
   view_count?: number;
 }
 
-const MOCK_PHOTOS: Photo[] = [
-  { id: "1", title: "Mountain Sunrise", thumbnail_url: "/images/placeholder.jpg", category: "Landscapes", is_free: false, price: 49.99, view_count: 1250 },
-  { id: "2", title: "Urban Street", thumbnail_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 890 },
-  { id: "3", title: "Portrait Study", thumbnail_url: "/images/placeholder.jpg", category: "Portraits", is_free: false, price: 39.99, view_count: 2100 },
-  { id: "4", title: "Ocean Waves", thumbnail_url: "/images/placeholder.jpg", category: "Nature", is_free: false, price: 59.99, view_count: 1560 },
-  { id: "5", title: "City Lights", thumbnail_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 780 },
-  { id: "6", title: "Forest Path", thumbnail_url: "/images/placeholder.jpg", category: "Nature", is_free: false, price: 44.99, view_count: 1890 },
-  { id: "7", title: "Desert Dunes", thumbnail_url: "/images/placeholder.jpg", category: "Landscapes", is_free: false, price: 54.99, view_count: 1340 },
-  { id: "8", title: "Vintage Car", thumbnail_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 670 },
-  { id: "9", title: "Autumn Colors", thumbnail_url: "/images/placeholder.jpg", category: "Nature", is_free: false, price: 42.99, view_count: 2230 },
-];
-
 export default function GalleryPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [photos, setPhotos] = useState<Photo[]>(MOCK_PHOTOS);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "all");
   const [sort, setSort] = useState(searchParams.get("sort") || "newest");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      let filtered = [...MOCK_PHOTOS];
+    const fetchPhotos = async () => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (debouncedSearch) params.set("search", debouncedSearch);
+        if (category && category !== "all") params.set("category", category);
 
-      if (debouncedSearch) {
-        filtered = filtered.filter((p) =>
-          p.title.toLowerCase().includes(debouncedSearch.toLowerCase())
-        );
-      }
+        const { data } = await api.get(`/photos/all?${params.toString()}`);
+        const items = Array.isArray(data) ? data : data.items || [];
 
-      if (category && category !== "all") {
-        filtered = filtered.filter(
-          (p) => p.category?.toLowerCase() === category.toLowerCase()
-        );
-      }
+        const mapped: Photo[] = items.map((p: any) => ({
+          id: p.id,
+          title: p.title || p.alt || "",
+          thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
+          category: p.collectionId || undefined,
+          is_free: true,
+          price: undefined,
+          view_count: undefined,
+        }));
 
-      // Sort
-      switch (sort) {
-        case "popular":
+        let filtered = mapped;
+
+        if (sort === "popular") {
           filtered.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
-          break;
-        case "price_asc":
+        } else if (sort === "price_asc") {
           filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
-          break;
-        case "price_desc":
+        } else if (sort === "price_desc") {
           filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
-          break;
-        default: // newest
-          break;
-      }
+        }
 
-      setPhotos(filtered);
-      setIsLoading(false);
-    }, 300);
+        setPhotos(filtered);
+      } catch {
+        setPhotos([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPhotos();
   }, [debouncedSearch, category, sort]);
 
   const handleSearchChange = (value: string) => {

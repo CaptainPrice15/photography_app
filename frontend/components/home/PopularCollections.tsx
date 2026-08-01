@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Folder, ArrowRight } from "lucide-react";
+import api from "@/lib/api";
 
 interface Collection {
   id: string;
@@ -16,14 +18,21 @@ interface PopularCollectionsProps {
   collections?: Collection[];
 }
 
-const MOCK_COLLECTIONS: Collection[] = [
-  { id: "1", name: "Landscapes", photo_count: 45, cover_url: "/images/placeholder.jpg" },
-  { id: "2", name: "Urban Exploration", photo_count: 32, cover_url: "/images/placeholder.jpg" },
-  { id: "3", name: "Portrait Series", photo_count: 28, cover_url: "/images/placeholder.jpg" },
-  { id: "4", name: "Nature & Wildlife", photo_count: 56, cover_url: "/images/placeholder.jpg" },
-];
+export function PopularCollections({ collections: propCollections }: PopularCollectionsProps) {
+  const [collections, setCollections] = useState<Collection[]>(propCollections || []);
 
-export function PopularCollections({ collections = MOCK_COLLECTIONS }: PopularCollectionsProps) {
+  useEffect(() => {
+    if (propCollections) return;
+    api.get("/photos/collections").then(({ data }) => {
+      const items = Array.isArray(data) ? data : data.items || [];
+      setCollections(items.map((c: any) => ({
+        id: c.id || c.slug,
+        name: c.title || c.name || c.slug,
+        photo_count: c.photos?.length || 0,
+        cover_url: c.cover || c.cover_url || "/images/placeholder.jpg",
+      })));
+    }).catch(() => {});
+  }, [propCollections]);
   return (
     <section className="py-20 px-4">
       <div className="container mx-auto">

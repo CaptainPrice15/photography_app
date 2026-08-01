@@ -47,7 +47,7 @@ export default function PhotosPage() {
       if (status === "draft") params.is_published = false;
       if (status === "featured") params.is_featured = true;
 
-      const { data } = await api.get("/photos", { params });
+      const { data } = await api.get("/photos/all", { params });
       const items = data.items || data;
       setPhotos(Array.isArray(items) ? items : []);
       setTotal(data.total || items.length || 0);

@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import api from "@/lib/api";
 
 interface Photo {
   id: string;
@@ -17,14 +19,21 @@ interface LatestUploadsProps {
   photos?: Photo[];
 }
 
-const MOCK_PHOTOS: Photo[] = [
-  { id: "7", title: "Golden Hour", thumbnail_url: "/images/placeholder.jpg", created_at: "2026-07-24" },
-  { id: "8", title: "Misty Mountains", thumbnail_url: "/images/placeholder.jpg", created_at: "2026-07-23" },
-  { id: "9", title: "Coastal Sunset", thumbnail_url: "/images/placeholder.jpg", created_at: "2026-07-22" },
-  { id: "10", title: "Autumn Leaves", thumbnail_url: "/images/placeholder.jpg", created_at: "2026-07-21" },
-];
+export function LatestUploads({ photos: propPhotos }: LatestUploadsProps) {
+  const [photos, setPhotos] = useState<Photo[]>(propPhotos || []);
 
-export function LatestUploads({ photos = MOCK_PHOTOS }: LatestUploadsProps) {
+  useEffect(() => {
+    if (propPhotos) return;
+    api.get("/photos/latest").then(({ data }) => {
+      const items = Array.isArray(data) ? data : data.items || [];
+      setPhotos(items.slice(0, 4).map((p: any) => ({
+        id: p.id,
+        title: p.title || p.alt || "",
+        thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
+        created_at: p.created_at || new Date().toISOString(),
+      })));
+    }).catch(() => {});
+  }, [propPhotos]);
   return (
     <section className="py-20 px-4 bg-muted/30">
       <div className="container mx-auto">
