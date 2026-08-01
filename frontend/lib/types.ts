@@ -51,6 +51,7 @@ export interface Album {
   slug: string;
   description?: string;
   cover_photo_id?: string;
+  cover_photo_url?: string;
   is_published: boolean;
   is_featured: boolean;
   photo_count: number;
