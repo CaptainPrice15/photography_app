@@ -3,31 +3,18 @@
 import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, ArrowRight } from "lucide-react";
+import { BookOpen, ArrowRight, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAlbums } from "@/hooks/useAlbums";
 
-interface Album {
-  id: string;
-  title: string;
-  description?: string;
-  cover_photo_url?: string;
-  photo_count: number;
-  is_featured: boolean;
-}
+export function FeaturedAlbums() {
+  const { data, isLoading } = useAlbums({ featured: true, limit: 3 });
+  const albums = data?.items || [];
 
-interface FeaturedAlbumsProps {
-  albums?: Album[];
-}
+  if (!isLoading && albums.length === 0) return null;
 
-const MOCK_ALBUMS: Album[] = [
-  { id: "1", title: "Japanese Temples", description: "Ancient temples and shrines across Japan", cover_photo_url: "/images/placeholder.jpg", photo_count: 24, is_featured: true },
-  { id: "2", title: "Nordic Landscapes", description: "Fjords and mountains of Scandinavia", cover_photo_url: "/images/placeholder.jpg", photo_count: 18, is_featured: true },
-  { id: "3", title: "Street Photography", description: "Candid moments from city streets", cover_photo_url: "/images/placeholder.jpg", photo_count: 32, is_featured: false },
-];
-
-export function FeaturedAlbums({ albums = MOCK_ALBUMS }: FeaturedAlbumsProps) {
   return (
-    <section className="py-20 px-4 bg-muted/30">
+    <section className="py-20 px-4 bg-muted/20 border-y border-border/40">
       <div className="container mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -36,64 +23,76 @@ export function FeaturedAlbums({ albums = MOCK_ALBUMS }: FeaturedAlbumsProps) {
           className="flex items-center justify-between mb-12"
         >
           <div>
-            <h2 className="text-3xl font-bold mb-2">Featured Albums</h2>
-            <p className="text-muted-foreground flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Curated photo collections
-            </p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-xs font-semibold border border-amber-500/30 mb-2">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Curated Collections</span>
+            </div>
+            <h2 className="font-heading font-bold text-3xl sm:text-4xl">Featured Albums</h2>
           </div>
           <Link
             href="/albums"
-            className="hidden sm:flex items-center gap-2 text-primary hover:underline"
+            className="hidden sm:flex items-center gap-2 text-sm font-semibold text-amber-500 hover:underline"
           >
             View all albums <ArrowRight className="h-4 w-4" />
           </Link>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {albums.map((album, index) => (
-            <motion.div
-              key={album.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Link href={`/albums/${album.id}`} className="group block">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
-                  {album.cover_photo_url ? (
-                    <Image
-                      src={album.cover_photo_url}
-                      alt={album.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <BookOpen className="h-12 w-12 text-muted-foreground/50" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-white font-semibold">{album.title}</h3>
-                      {album.is_featured && (
-                        <Badge className="bg-yellow-600 text-xs">Featured</Badge>
-                      )}
-                    </div>
-                    {album.description && (
-                      <p className="text-white/70 text-sm line-clamp-2 mb-2">{album.description}</p>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="aspect-[4/3] rounded-2xl bg-muted/40 animate-pulse border border-border/40" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {albums.slice(0, 3).map((album, index) => (
+              <motion.div
+                key={album.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Link href={`/albums/${album.id}`} className="group block">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-card border border-border/60 shadow-lg group-hover:shadow-2xl transition-all duration-500 glass-panel">
+                    {album.cover_photo_url ? (
+                      <Image
+                        src={album.cover_photo_url}
+                        alt={album.title}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
+                        <BookOpen className="h-12 w-12 text-amber-500/30" />
+                      </div>
                     )}
-                    <p className="text-white/60 text-xs">{album.photo_count} photos</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-5 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-white font-heading font-bold text-xl group-hover:text-amber-400 transition-colors">
+                          {album.title}
+                        </h3>
+                        {album.is_featured && (
+                          <Badge className="bg-amber-500 text-black text-[10px] font-bold">Featured</Badge>
+                        )}
+                      </div>
+                      {album.description && (
+                        <p className="text-white/70 text-xs line-clamp-2">{album.description}</p>
+                      )}
+                      <p className="text-amber-400/90 text-xs font-mono font-medium pt-1">
+                        {album.photo_count || 0} photographs
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         <div className="text-center mt-10 sm:hidden">
-          <Link href="/albums" className="text-primary hover:underline">
+          <Link href="/albums" className="text-amber-500 font-semibold hover:underline text-sm">
             View all albums →
           </Link>
         </div>
