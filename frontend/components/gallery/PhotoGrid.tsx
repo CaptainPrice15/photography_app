@@ -2,24 +2,7 @@
 
 import { motion } from "motion/react";
 import { PhotoCard } from "./PhotoCard";
-
-interface Photo {
-  id: string;
-  title: string;
-  slug?: string;
-  thumbnail_url: string;
-  original_url?: string;
-  category?: string;
-  is_free: boolean;
-  price?: number;
-  view_count?: number;
-  camera_make?: string;
-  camera_model?: string;
-  lens?: string;
-  aperture?: string;
-  shutter_speed?: string;
-  iso?: number;
-}
+import type { Photo } from "@/lib/types";
 
 interface PhotoGridProps {
   photos: Photo[];

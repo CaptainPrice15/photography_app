@@ -9,19 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoomPreviewModal } from "@/components/photo/RoomPreviewModal";
 import { formatCurrency } from "@/lib/utils";
-
-interface Photo {
-  id: string;
-  title: string;
-  slug?: string;
-  thumbnail_url: string;
-  original_url?: string;
-  category?: string;
-  is_free: boolean;
-  price?: number;
-  view_count?: number;
-  location_name?: string;
-}
+import type { Photo } from "@/lib/types";
 
 interface PhotoCardProps {
   photo: Photo;
@@ -35,6 +23,7 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
   const [isLiked, setIsLiked] = useState(false);
 
   const displayPrice = photo.price ?? 25;
+  const imageSrc = photo.thumbnail_url || photo.original_url || "/images/placeholder.jpg";
 
   return (
     <>
@@ -45,7 +34,7 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/40">
           <Image
-            src={photo.thumbnail_url}
+            src={imageSrc}
             alt={photo.title}
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-108"
@@ -123,9 +112,9 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
 
           {/* Badges Overlay */}
           <div className="absolute top-3 left-3 flex gap-1.5 z-10">
-            {photo.category && (
+            {photo.category_id && (
               <Badge className="text-[10px] font-semibold tracking-wider uppercase bg-black/60 text-white border border-white/20 backdrop-blur-md">
-                {photo.category}
+                {photo.category_id}
               </Badge>
             )}
           </div>
@@ -173,7 +162,7 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
       <RoomPreviewModal
         isOpen={isRoomPreviewOpen}
         onClose={() => setIsRoomPreviewOpen(false)}
-        photoUrl={photo.original_url || photo.thumbnail_url}
+        photoUrl={photo.original_url || imageSrc}
         photoTitle={photo.title}
       />
     </>
