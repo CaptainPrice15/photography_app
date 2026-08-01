@@ -1,4 +1,7 @@
 export { ExifInfo } from "./ExifInfo";
+export { ExifHistogram } from "./ExifHistogram";
+export { BeforeAfterSlider } from "./BeforeAfterSlider";
+export { RoomPreviewModal } from "./RoomPreviewModal";
 export { FavouriteButton } from "./FavouriteButton";
 export { AddToCartButton } from "./AddToCartButton";
 export { DownloadButton } from "./DownloadButton";
