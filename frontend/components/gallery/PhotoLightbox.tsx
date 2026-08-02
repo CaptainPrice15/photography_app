@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useCallback, useState, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";import Image from "next/image";
+import { motion, AnimatePresence } from "motion/react";
+import Image from "next/image";
 import {
   X,
   ChevronLeft,
@@ -16,18 +17,17 @@ import {
   Gauge,
   Calendar,
   MapPin,
-  Sliders,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExifHistogram } from "@/components/photo/ExifHistogram";
 import { RoomPreviewModal } from "@/components/photo/RoomPreviewModal";
-import { BeforeAfterSlider } from "@/components/photo/BeforeAfterSlider";
+import { getPreviewUrl } from "@/lib/imageUrl";
 
 interface Photo {
   id: string;
   title: string;
-  original_url?: string;
-  thumbnail_url?: string;
+  preview_url?: string;
+  download_url?: string;
   camera_make?: string;
   camera_model?: string;
   lens?: string;
@@ -59,12 +59,11 @@ export function PhotoLightbox({
   const [showExif, setShowExif] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isRoomPreviewOpen, setIsRoomPreviewOpen] = useState(false);
-  const [showCompare, setShowCompare] = useState(false);
   const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
   const prevIndexRef = useRef(currentIndex);
 
   const currentPhoto = photos[currentIndex];
-  const currentUrl = currentPhoto?.original_url || currentPhoto?.thumbnail_url || "";
+  const currentUrl = getPreviewUrl(currentPhoto);
 
   useEffect(() => {
     if (prevIndexRef.current !== currentIndex) {
@@ -146,23 +145,6 @@ export function PhotoLightbox({
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Before/After Toggle */}
-                {currentPhoto.thumbnail_url && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`rounded-full text-xs font-medium border ${
-                      showCompare
-                        ? "bg-amber-500 text-black border-amber-400"
-                        : "text-white border-white/20 hover:bg-white/10"
-                    }`}
-                    onClick={() => setShowCompare(!showCompare)}
-                  >
-                    <Sliders className="h-3.5 w-3.5 mr-1" />
-                    Compare RAW
-                  </Button>
-                )}
-
                 {/* Wall Preview Button */}
                 <Button
                   variant="ghost"

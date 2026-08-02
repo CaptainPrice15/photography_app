@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
 
     setIsLoading(true);
     try {
-      await api.post("/auth/reset-password", { token, password: data.password });
+      await api.post("/auth/reset-password", { token, new_password: data.password });
       toast.success("Password reset successfully!");
       router.push("/login");
     } catch (error: unknown) {

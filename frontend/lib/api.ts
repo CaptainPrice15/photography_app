@@ -2,7 +2,7 @@ import axios from "axios";
 import { API_URL } from "./constants";
 
 const api = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: `${API_URL}/api/v1`,
   headers: {
     "Content-Type": "application/json",
   },
@@ -35,7 +35,7 @@ api.interceptors.response.use(
         const refresh_token = localStorage.getItem("refresh_token");
         if (refresh_token) {
           const { data } = await axios.post(
-            `${API_URL}/api/auth/refresh`,
+            `${API_URL}/api/v1/auth/refresh`,
             { refresh_token }
           );
 

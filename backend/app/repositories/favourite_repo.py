@@ -1,6 +1,7 @@
-from typing import Optional
-from sqlalchemy import select
+from typing import Optional, List, Tuple
+from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.favourite import Favourite
 from app.repositories.base import BaseRepository
@@ -9,6 +10,24 @@ from app.repositories.base import BaseRepository
 class FavouriteRepository(BaseRepository[Favourite]):
     def __init__(self):
         super().__init__(Favourite)
+
+    async def get_for_user(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        *,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> Tuple[List[Favourite], int]:
+        query = (
+            select(Favourite)
+            .options(selectinload(Favourite.photo))
+            .where(Favourite.user_id == user_id)
+        )
+        total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar()
+        query = query.order_by(desc(Favourite.created_at)).offset(skip).limit(limit)
+        result = await db.execute(query)
+        return list(result.scalars().all()), total
 
     async def get_by_user_and_photo(
         self, db: AsyncSession, user_id: str, photo_id: str

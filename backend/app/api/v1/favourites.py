@@ -19,8 +19,8 @@ async def list_favourites(
     current_user: User = Depends(get_current_user),
 ):
     service = FavouriteService()
-    items, total = await service.get_user_favourites(
-        db, str(current_user.id), page=page, limit=limit
+    items, total = await service.repo.get_for_user(
+        db, str(current_user.id), skip=(page - 1) * limit, limit=limit
     )
     return FavouriteListResponse(
         items=[FavouriteResponse.model_validate(f) for f in items],

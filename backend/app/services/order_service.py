@@ -116,6 +116,11 @@ class OrderService:
         skip = (page - 1) * limit
         return await self.order_repo.get_by_user(db, user_id, skip=skip, limit=limit)
 
+    async def get_all_orders(
+        self, db: AsyncSession, skip: int = 0, limit: int = 20
+    ) -> tuple[list[Order], int]:
+        return await self.order_repo.get_all(db, skip=skip, limit=limit)
+
     async def update_status(
         self, db: AsyncSession, order_id: str, status: str
     ) -> Optional[Order]:

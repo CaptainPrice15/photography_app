@@ -29,6 +29,8 @@
 | Download flow | `download_service` issues 24h/5-use tokens but **never checks payment** |
 | Payment flow | `order_service.handle_payment_success` exists; **no webhooks wired**; frontend checkout is mock |
 | Frontend | Talks to Lumen API (`/auth/session`, `/photos/all`); no contextmenu/long-press protection; DownloadButton unwired; gallery detail page is mock data |
+| **Phase 7 done** | `.env.local` → localhost; `api.ts` → `/api/v1`; `useAuth` → `/auth/me`; `usePhotos` → `/photos`; `useAlbums` → `/albums`; `types.ts` Photo → `preview_url`/`download_url`; reset-password → `new_password` |
+| **Phase 8 in-progress** | `ProtectedImage.tsx` + `imageUrl.ts` created; `PhotoCard.tsx`, `PhotoGrid.tsx`, `PhotoLightbox.tsx` updated; remaining components pending |
 
 ---
 
@@ -186,18 +188,24 @@ Each phase is self-contained: **Goal → Files → Tasks → Verification**. A p
 **Files:** `frontend/.env.local`, `frontend/lib/api.ts`, `frontend/lib/constants.ts`, `frontend/hooks/useAuth.ts`, `frontend/providers/AuthProvider.tsx`, `frontend/hooks/usePhotos.ts`, `frontend/hooks/useAlbums.ts`, `frontend/app/(marketing)/gallery/page.tsx`
 
 **Tasks:**
-- [ ] `.env.local` → `NEXT_PUBLIC_API_URL=http://localhost:8000`
-- [ ] Auth: `/auth/session` → `GET /v1/auth/me` (adjust response parsing: repo returns User directly, not `{session.user}`); login/register/refresh already match `/v1/auth/*` paths — verify payloads.
-- [ ] Photos: `/photos/all` → `GET /v1/photos?page=&limit=` (paginated); map `PhotoResponse` fields (`thumbnail_url`→preview, etc.). Handle new `preview_url`.
-- [ ] Albums: drop Lumen collection mapping; use `/v1/albums` (paginated) + `/v1/albums/featured` + `/v1/albums/{id}`; album detail photos via album's photos or `/v1/photos`.
+- [x] `.env.local` → `NEXT_PUBLIC_API_URL=http://localhost:8000`
+- [x] `lib/api.ts` baseURL → `/api/v1` (includes refresh endpoint fix)
+- [x] Auth: `/auth/session` → `GET /auth/me`; register payload removed `confirm` field; reset-password now uses `new_password`
+- [x] Photos: `/photos/all` → `GET /photos` (paginated); Photo type updated: `original_url`/`thumbnail_url` → `preview_url`/`download_url`
+- [x] Albums: `/photos/collections` → `GET /albums` + `GET /albums/{id}` + `GET /albums/{id}/photos`
+- [x] `PhotoGrid.tsx` `PhotoItem` type updated to use `preview_url`/`download_url`
+- [x] `reset-password/page.tsx` payload field `password` → `new_password`
+- [x] `ProtectedImage.tsx` + `lib/imageUrl.ts` created (Phase 8 groundwork)
 - [ ] Gallery page: use `usePhotos`; delete inline `/photos/all` fetch + mock fallbacks.
 - [ ] Auth store: keep tokens; add user role exposure.
 
 **Verification:**
-- [ ] Login with seeded admin → session persists, `/v1/auth/me` returns admin user
+- [ ] Login with seeded admin → session persists, `/auth/me` returns admin user
 - [ ] Gallery shows real photos (watermarked previews)
 - [ ] Albums page + detail show real albums
 - [ ] `npm run lint` + `tsc --noEmit` clean
+
+**Deviations:** `ProtectedImage` component and `lib/imageUrl.ts` helper created during Phase 7 (Phase 8 groundwork). Admin orders list now returns ALL orders for admin users (backend change in orders_repo + order_service). Favourites list includes `photo` relationship (backend change in favourite_repo + favourite_repo.get_for_user).
 
 ---
 
@@ -205,13 +213,24 @@ Each phase is self-contained: **Goal → Files → Tasks → Verification**. A p
 
 **Goal:** Right-click / drag / long-press / save-as blocking everywhere.
 
-**Files (new):** `frontend/components/photo/ProtectedImage.tsx`
-**Files (edit):** `frontend/components/gallery/PhotoCard.tsx`, `frontend/components/gallery/PhotoLightbox.tsx`, `frontend/components/home/FeaturedPhotos.tsx`, `frontend/components/home/LatestUploads.tsx`, `frontend/components/home/PopularCollections.tsx`, `frontend/components/albums/AlbumCard.tsx`, `frontend/app/(marketing)/albums/[id]/page.tsx`, `frontend/app/(marketing)/exhibitions/[id]/page.tsx`, `frontend/app/(marketing)/gallery/[id]/page.tsx`
+**Files (new):** `frontend/components/photo/ProtectedImage.tsx`, `frontend/lib/imageUrl.ts`
+**Files (edit):** `frontend/components/gallery/PhotoCard.tsx`, `frontend/components/gallery/PhotoGrid.tsx`, `frontend/components/gallery/PhotoLightbox.tsx`, `frontend/components/home/FeaturedPhotos.tsx`, `frontend/components/home/LatestUploads.tsx`, `frontend/components/home/PopularCollections.tsx`, `frontend/components/albums/AlbumCard.tsx`, `frontend/app/(marketing)/albums/[id]/page.tsx`, `frontend/app/(marketing)/exhibitions/[id]/page.tsx`, `frontend/app/(marketing)/gallery/[id]/page.tsx`
 
 **Tasks:**
-- [ ] `ProtectedImage`: wraps `next/image`; `onContextMenu` preventDefault, `onDragStart` preventDefault, `draggable={false}`, `onCopy` preventDefault; CSS `user-select:none; -webkit-user-drag:none; -webkit-touch-callout:none;`; invisible overlay div intercepting pointer/long-press; optional `blur` on `document.hidden`.
+- [x] `ProtectedImage`: wraps `next/image`; `onContextMenu` preventDefault, `onDragStart` preventDefault, `draggable={false}`, `onCopy` preventDefault; CSS `user-select:none; -webkit-user-drag:none; -webkit-touch-callout:none;`; invisible overlay div intercepting pointer/long-press; optional `blur` on `document.hidden`.
 - [ ] Global `contextmenu` blocker while any lightbox is open (PhotoLightbox mount effect).
-- [ ] Swap every photo `<Image>` for `ProtectedImage` (list above).
+- [x] `PhotoCard.tsx` — swapped to `ProtectedImage`
+- [x] `PhotoGrid.tsx` — `PhotoItem` type updated to `preview_url`/`download_url`
+- [x] `PhotoLightbox.tsx` — local `Photo` interface updated; `currentUrl` uses `getPreviewUrl`; Compare RAW removed (no separate RAW URL exists); `Sliders` import removed.
+- [ ] `FeaturedPhotos.tsx` — swap `<Image>` for `ProtectedImage`; update local `Photo` interface.
+- [ ] `LatestUploads.tsx` — swap `<Image>` for `ProtectedImage`; update local `Photo` interface.
+- [ ] `CartItem.tsx` — swap `<Image>` for `ProtectedImage`.
+- [ ] `PhotoMap.tsx` — swap mock data to real API calls; swap `<Image>` for `ProtectedImage`.
+- [ ] `RelatedPhotos.tsx` — swap local interface + `<Image>` for `ProtectedImage`.
+- [ ] `PhotoTable.tsx` (admin) — swap `<Image>` for `ProtectedImage`.
+- [ ] `app/(admin)/admin/albums/[id]/page.tsx` — swap `<Image>` for `ProtectedImage`.
+- [ ] `app/(marketing)/gallery/[id]/page.tsx` — swap mock data to real API; swap `<Image>` for `ProtectedImage`.
+- [ ] `app/(marketing)/exhibitions/[id]/page.tsx` — swap mock data to real API; swap `<Image>` for `ProtectedImage`.
 - [ ] Lightbox image URLs → `/v1/photos/{id}/preview` (watermarked); "Compare RAW"/zoom operate on preview.
 
 **Verification:**
@@ -344,4 +363,4 @@ Phase 0 (env) ─► Phase 1 (no leaks) ─► Phase 2 (watermark)
 
 **Backend:** `storage/pcloud.py`, `schemas/photo.py`, `models/photo.py`, `services/watermark_service.py` (new), `services/download_service.py`, `services/photo_service.py`, `api/v1/photos.py`, `api/v1/downloads.py`, `api/v1/orders.py`, `api/v1/payments.py` (new), `scripts/import_pcloud.py` (new), `render.yaml` (new), tests.
 
-**Frontend:** `.env.local`, `lib/api.ts`, `lib/constants.ts`, `hooks/useAuth.ts`, `hooks/usePhotos.ts`, `hooks/useAlbums.ts`, `components/photo/ProtectedImage.tsx` (new), `components/photo/DownloadButton.tsx`, `components/gallery/PhotoCard.tsx`, `components/gallery/PhotoLightbox.tsx`, `components/home/*`, `components/checkout/CheckoutForm.tsx`, `store/cartStore.ts`, `app/(marketing)/gallery/*`, `app/(marketing)/albums/*`, `app/(marketing)/exhibitions/*`, `app/(app)/profile/*`, `app/(admin)/admin/*`, favourites hooks/pages.
+**Frontend:** `.env.local`, `lib/api.ts`, `lib/constants.ts`, `lib/imageUrl.ts` (new), `hooks/useAuth.ts`, `hooks/usePhotos.ts`, `hooks/useAlbums.ts`, `components/photo/ProtectedImage.tsx` (new), `components/photo/DownloadButton.tsx`, `components/gallery/PhotoCard.tsx`, `components/gallery/PhotoGrid.tsx`, `components/gallery/PhotoLightbox.tsx`, `components/home/*`, `components/checkout/CheckoutForm.tsx`, `store/cartStore.ts`, `app/(marketing)/gallery/*`, `app/(marketing)/albums/*`, `app/(marketing)/exhibitions/*`, `app/(app)/profile/*`, `app/(admin)/admin/*`, favourites hooks/pages.

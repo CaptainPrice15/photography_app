@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Eye, Heart, ShoppingCart, Sparkles, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoomPreviewModal } from "@/components/photo/RoomPreviewModal";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
+import { getPreviewUrl } from "@/lib/imageUrl";
 import { formatCurrency } from "@/lib/utils";
 import type { PhotoItem } from "./PhotoGrid";
 
@@ -23,7 +24,6 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
   const [isLiked, setIsLiked] = useState(false);
 
   const displayPrice = photo.price ?? 25;
-  const imageSrc = photo.thumbnail_url || photo.original_url || "/images/placeholder.jpg";
   const isFree = photo.is_free ?? false;
 
   return (
@@ -34,10 +34,9 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
         className="group relative flex flex-col rounded-2xl overflow-hidden bg-card border border-border/50 shadow-md hover:shadow-2xl hover:border-amber-500/40 transition-all duration-300 glass-panel"
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/40">
-          <Image
-            src={imageSrc}
+          <ProtectedImage
+            photo={photo}
             alt={photo.title}
-            fill
             className="object-cover transition-transform duration-700 group-hover:scale-108"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
@@ -163,7 +162,7 @@ export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: P
       <RoomPreviewModal
         isOpen={isRoomPreviewOpen}
         onClose={() => setIsRoomPreviewOpen(false)}
-        photoUrl={photo.original_url || imageSrc}
+        photoUrl={getPreviewUrl(photo)}
         photoTitle={photo.title}
       />
     </>

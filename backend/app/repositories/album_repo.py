@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.album import Album, album_photos
+from app.models.photo import Photo
 from app.repositories.base import BaseRepository
 
 
@@ -16,6 +17,26 @@ class AlbumRepository(BaseRepository[Album]):
             select(Album).options(selectinload(Album.photos)).where(Album.slug == slug)
         )
         return result.scalar_one_or_none()
+
+    async def get_with_photos(self, db: AsyncSession, album_id: str) -> Optional[Album]:
+        result = await db.execute(
+            select(Album)
+            .options(selectinload(Album.photos))
+            .where(Album.id == album_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_photos(
+        self, db: AsyncSession, album_id: str
+    ) -> List[Photo]:
+        album = await self.get_with_photos(db, album_id)
+        if not album:
+            return []
+        return sorted(
+            album.photos,
+            key=lambda p: getattr(p, "created_at", None),
+            reverse=True,
+        )
 
     async def get_featured(self, db: AsyncSession, limit: int = 12) -> List[Album]:
         result = await db.execute(

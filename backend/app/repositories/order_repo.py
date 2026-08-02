@@ -41,6 +41,14 @@ class OrderRepository(BaseRepository[Order]):
         result = await db.execute(query)
         return list(result.scalars().all()), total
 
+    async def get_all(self, db: AsyncSession, skip: int = 0, limit: int = 20):
+        query = select(Order)
+        count_query = select(func.count()).select_from(query.subquery())
+        total = (await db.execute(count_query)).scalar()
+        query = query.order_by(desc(Order.created_at)).offset(skip).limit(limit)
+        result = await db.execute(query)
+        return list(result.scalars().all()), total
+
     async def generate_order_number(self, db: AsyncSession) -> str:
         result = await db.execute(select(func.count()).select_from(Order))
         count = result.scalar()

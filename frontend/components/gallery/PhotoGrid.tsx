@@ -7,8 +7,8 @@ import type { Photo } from "@/lib/types";
 export type PhotoItem = Partial<Photo> & {
   id: string;
   title: string;
-  thumbnail_url?: string;
-  original_url?: string;
+  preview_url?: string;
+  download_url?: string;
   is_free?: boolean;
   price?: number;
 };

@@ -13,12 +13,8 @@ export function useAuth() {
       const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
       if (token) {
         try {
-          const { data } = await api.get("/auth/session");
-          if (data.session?.user) {
-            setUser(data.session.user);
-          } else {
-            storeLogout();
-          }
+          const { data } = await api.get("/auth/me");
+          setUser(data);
         } catch {
           storeLogout();
         }
@@ -40,7 +36,6 @@ export function useAuth() {
       email,
       username,
       password,
-      confirm: password,
       full_name: fullName,
     });
     storeLogin(data.user, data.access_token, data.refresh_token);

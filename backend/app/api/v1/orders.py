@@ -19,9 +19,12 @@ async def list_orders(
     current_user: User = Depends(get_current_user),
 ):
     service = OrderService()
-    items, total = await service.get_user_orders(
-        db, str(current_user.id), page=page, limit=limit
-    )
+    if current_user.role == "admin":
+        items, total = await service.get_all_orders(db, skip=(page - 1) * limit, limit=limit)
+    else:
+        items, total = await service.get_user_orders(
+            db, str(current_user.id), page=page, limit=limit
+        )
     return OrderListResponse(
         items=[OrderResponse.model_validate(o) for o in items],
         total=total,

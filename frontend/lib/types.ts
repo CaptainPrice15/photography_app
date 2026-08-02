@@ -15,8 +15,8 @@ export interface Photo {
   title: string;
   slug: string;
   description?: string;
-  original_url?: string;
-  thumbnail_url?: string;
+  preview_url: string;
+  download_url: string;
   width: number;
   height: number;
   file_size: number;

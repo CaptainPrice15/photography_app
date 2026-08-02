@@ -13,6 +13,7 @@ from app.schemas.album import (
     AlbumPhotoRequest,
 )
 from app.schemas.common import MessageResponse
+from app.schemas.photo import PhotoResponse
 from app.services.album_service import AlbumService
 
 router = APIRouter(prefix="/albums", tags=["Albums"])
@@ -99,6 +100,17 @@ async def delete_album(
     if not deleted:
         raise HTTPException(status_code=404, detail="Album not found")
     return MessageResponse(detail="Album deleted successfully")
+
+
+@router.get("/{album_id}/photos", response_model=list[PhotoResponse])
+async def get_album_photos(
+    album_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Photos belonging to an album, newest first."""
+    service = AlbumService()
+    photos = await service.repo.get_photos(db, album_id)
+    return [PhotoResponse.model_validate(p) for p in photos]
 
 
 @router.post("/{album_id}/photos", response_model=MessageResponse)
