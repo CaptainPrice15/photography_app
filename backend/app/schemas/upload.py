@@ -20,8 +20,6 @@ class UploadResponse(BaseModel):
     slug: str
     original_file_id: str
     thumbnail_file_id: Optional[str] = None
-    original_url: Optional[str] = None
-    thumbnail_url: Optional[str] = None
     width: int
     height: int
     file_size: int

@@ -2,11 +2,13 @@ from app.payments.base import PaymentProvider
 from app.payments.stripe_provider import StripeProvider
 from app.payments.paypal_provider import PayPalProvider
 from app.payments.razorpay_provider import RazorpayProvider
+from app.payments.mock_provider import MockProvider
 
 providers = {
     "stripe": StripeProvider(),
     "paypal": PayPalProvider(),
     "razorpay": RazorpayProvider(),
+    "mock": MockProvider(),
 }
 
 

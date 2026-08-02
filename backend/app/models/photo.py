@@ -20,8 +20,6 @@ class Photo(Base, TimestampMixin):
 
     original_file_id: Mapped[str] = mapped_column(String(100), nullable=False)
     thumbnail_file_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    original_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    thumbnail_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     width: Mapped[int] = mapped_column(Integer, nullable=False)
     height: Mapped[int] = mapped_column(Integer, nullable=False)

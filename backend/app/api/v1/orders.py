@@ -39,7 +39,8 @@ async def create_order(
 ):
     service = OrderService()
     try:
-        order = await service.create_order(db, str(current_user.id), data)
+        result = await service.create_order(db, str(current_user.id), data)
+        order = await service.get_by_id(db, result["order_id"])
         return OrderResponse.model_validate(order)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -57,4 +58,22 @@ async def get_order(
         raise HTTPException(status_code=404, detail="Order not found")
     if str(order.user_id) != str(current_user.id) and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Access denied")
+    return OrderResponse.model_validate(order)
+
+
+@router.post("/{order_id}/mock-pay", response_model=OrderResponse)
+async def mock_pay_order(
+    order_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Sandbox: mark an order as paid without a real payment provider."""
+    service = OrderService()
+    order = await service.get_by_id(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if str(order.user_id) != str(current_user.id) and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    order = await service.mark_paid(db, order_id, provider_name="mock")
     return OrderResponse.model_validate(order)

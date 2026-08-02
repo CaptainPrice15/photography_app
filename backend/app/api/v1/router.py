@@ -10,6 +10,7 @@ from app.api.v1.favourites import router as favourites_router
 from app.api.v1.cart import router as cart_router
 from app.api.v1.orders import router as orders_router
 from app.api.v1.downloads import router as downloads_router
+from app.api.v1.payments import router as payments_router
 from app.api.v1.comments import router as comments_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.uploads import router as uploads_router
@@ -28,6 +29,7 @@ api_router.include_router(favourites_router)
 api_router.include_router(cart_router)
 api_router.include_router(orders_router)
 api_router.include_router(downloads_router)
+api_router.include_router(payments_router)
 api_router.include_router(comments_router)
 api_router.include_router(notifications_router)
 api_router.include_router(uploads_router)

@@ -19,23 +19,36 @@ class OrderService:
     async def create_order(
         self, db: AsyncSession, user_id: str, data: OrderCreate
     ) -> dict:
-        cart = await self.cart_repo.get_by_user(db, user_id)
-        if not cart or not cart.items:
-            raise ValueError("Cart is empty")
+        if data.photo_ids:
+            selected_photos = []
+            for photo_id in data.photo_ids:
+                photo = await self.photo_repo.get(db, photo_id)
+                if photo and photo.price is not None:
+                    selected_photos.append(photo)
+            if not selected_photos:
+                raise ValueError("No purchasable photos provided")
+            cart_items = selected_photos
+        else:
+            cart = await self.cart_repo.get_by_user(db, user_id)
+            if not cart or not cart.items:
+                raise ValueError("Cart is empty")
+            cart_items = []
+            for cart_item in cart.items:
+                photo = await self.photo_repo.get(db, cart_item.photo_id)
+                if photo:
+                    cart_items.append(photo)
 
         order_number = await self.order_repo.generate_order_number(db)
 
         total = 0.0
         items = []
-        for cart_item in cart.items:
-            photo = await self.photo_repo.get(db, cart_item.photo_id)
-            if photo and photo.price:
-                total += float(photo.price)
-                items.append({
-                    "photo_id": str(photo.id),
-                    "photo_title": photo.title,
-                    "price": float(photo.price),
-                })
+        for photo in cart_items:
+            total += float(photo.price or 0)
+            items.append({
+                "photo_id": str(photo.id),
+                "photo_title": photo.title,
+                "price": float(photo.price or 0),
+            })
 
         order = await self.order_repo.create(
             db,
@@ -49,22 +62,21 @@ class OrderService:
             billing_email=data.billing_email,
         )
 
-        for cart_item in cart.items:
-            photo = await self.photo_repo.get(db, cart_item.photo_id)
-            if photo:
-                from app.models.order import OrderItem
-                item = OrderItem(
-                    order_id=order.id,
-                    photo_id=photo.id,
-                    photo_title=photo.title,
-                    price=photo.price or 0,
-                )
-                db.add(item)
+        for photo in cart_items:
+            from app.models.order import OrderItem
+            item = OrderItem(
+                order_id=order.id,
+                photo_id=photo.id,
+                photo_title=photo.title,
+                price=photo.price or 0,
+            )
+            db.add(item)
 
         await db.commit()
         await db.refresh(order)
 
-        await self.cart_repo.clear(db, cart.id)
+        if not data.photo_ids:
+            await self.cart_repo.clear(db, cart.id)
 
         provider = get_payment_provider(data.payment_provider)
         success_url = f"{settings.FRONTEND_URL}/checkout/success"
@@ -91,7 +103,7 @@ class OrderService:
         }
 
     async def get_by_id(self, db: AsyncSession, order_id: str) -> Optional[Order]:
-        return await self.order_repo.get(db, order_id)
+        return await self.order_repo.get_with_items(db, order_id)
 
     async def get_by_order_number(
         self, db: AsyncSession, order_number: str
@@ -108,6 +120,25 @@ class OrderService:
         self, db: AsyncSession, order_id: str, status: str
     ) -> Optional[Order]:
         return await self.order_repo.update(db, order_id, status=status)
+
+    async def mark_paid(
+        self, db: AsyncSession, order_id: str, provider_name: str = "mock"
+    ) -> Optional[Order]:
+        """Set an order to paid — used by mock-pay and payment webhooks."""
+        from datetime import datetime, timezone
+        order = await self.order_repo.get(db, order_id)
+        if not order:
+            return None
+        if order.status == "paid":
+            return order
+        return await self.order_repo.update(
+            db,
+            order.id,
+            status="paid",
+            paid_at=datetime.now(timezone.utc),
+            payment_status="paid",
+            payment_provider=provider_name,
+        )
 
     async def handle_payment_success(
         self, db: AsyncSession, provider_name: str, session_id: str

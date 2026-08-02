@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
@@ -19,17 +19,28 @@ async def create_download(
     service = DownloadService()
     try:
         result = await service.create_download_token(
-            db, str(current_user.id), data.photo_id
+            db, current_user, data.photo_id
         )
         return DownloadResponse(**result)
     except ValueError as e:
+        if str(e) == "Payment required":
+            raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/verify/{token}", response_model=DownloadTokenVerify)
+@router.get("/verify/{token}")
 async def verify_download_token(
     token: str,
     db: AsyncSession = Depends(get_db),
 ):
     service = DownloadService()
-    return await service.verify_token(db, token)
+    result = await service.verify_token(db, token)
+    if not result.valid:
+        return DownloadTokenVerify(valid=False)
+
+    safe_name = "".join(c for c in result.photo_title if c.isalnum() or c in "._- ") or "photo"
+    return Response(
+        content=result.original_bytes,
+        media_type=result.content_type or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}.jpg"'},
+    )

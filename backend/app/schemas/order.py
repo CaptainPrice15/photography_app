@@ -16,9 +16,10 @@ class OrderItemResponse(BaseModel):
 
 
 class OrderCreate(BaseModel):
-    payment_provider: str  # stripe, paypal, razorpay
+    payment_provider: str  # stripe, paypal, razorpay, mock
     billing_name: Optional[str] = None
     billing_email: Optional[str] = None
+    photo_ids: Optional[List[Union[UUID, str]]] = None
 
 
 class OrderResponse(BaseModel):

@@ -26,6 +26,8 @@ class DownloadTokenVerify(BaseModel):
     valid: bool
     photo_id: Optional[Union[UUID, str]] = None
     photo_title: Optional[str] = None
-    original_url: Optional[str] = None
+    download_url: Optional[str] = None
     expires_at: Optional[Union[datetime, str]] = None
     downloads_remaining: Optional[int] = None
+    original_bytes: Optional[bytes] = None
+    content_type: Optional[str] = None

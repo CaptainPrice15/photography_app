@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List, Union
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class PhotoCreate(BaseModel):
@@ -10,8 +10,6 @@ class PhotoCreate(BaseModel):
     description: Optional[str] = None
     original_file_id: str
     thumbnail_file_id: Optional[str] = None
-    original_url: Optional[str] = None
-    thumbnail_url: Optional[str] = None
     width: int
     height: int
     file_size: int
@@ -42,8 +40,6 @@ class PhotoUpdate(BaseModel):
     description: Optional[str] = None
     original_file_id: Optional[str] = None
     thumbnail_file_id: Optional[str] = None
-    original_url: Optional[str] = None
-    thumbnail_url: Optional[str] = None
     width: Optional[int] = None
     height: Optional[int] = None
     file_size: Optional[int] = None
@@ -73,10 +69,8 @@ class PhotoResponse(BaseModel):
     title: str
     slug: str
     description: Optional[str] = None
-    original_file_id: str
-    thumbnail_file_id: Optional[str] = None
-    original_url: Optional[str] = None
-    thumbnail_url: Optional[str] = None
+    preview_url: Optional[str] = None
+    download_url: Optional[str] = None
     width: int
     height: int
     file_size: int
@@ -106,6 +100,13 @@ class PhotoResponse(BaseModel):
     updated_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def build_urls(self) -> "PhotoResponse":
+        pid = str(self.id)
+        self.preview_url = f"/api/v1/photos/{pid}/preview"
+        self.download_url = f"/api/v1/photos/{pid}/download"
+        return self
 
 
 class PhotoListResponse(BaseModel):

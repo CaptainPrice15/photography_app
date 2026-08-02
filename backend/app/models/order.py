@@ -23,7 +23,7 @@ class Order(Base, TimestampMixin):
     total_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
     payment_provider: Mapped[str] = mapped_column(
-        SAEnum("stripe", "paypal", "razorpay", name="payment_provider"),
+        SAEnum("stripe", "paypal", "razorpay", "mock", name="payment_provider"),
         nullable=False,
     )
     payment_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True)

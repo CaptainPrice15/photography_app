@@ -50,9 +50,6 @@ class ImageProcessor:
         )
         thumb_file_id = str(thumb_metadata.get("fileid"))
 
-        original_url = await self.storage.get_file_link(int(original_file_id))
-        thumb_url = await self.storage.get_thumb_link(int(thumb_file_id), 800, 600)
-
         from datetime import datetime
         taken_at = None
         if exif.taken_at:
@@ -68,8 +65,6 @@ class ImageProcessor:
             description=description,
             original_file_id=original_file_id,
             thumbnail_file_id=thumb_file_id,
-            original_url=original_url,
-            thumbnail_url=thumb_url,
             width=width,
             height=height,
             file_size=len(optimized_bytes),
@@ -98,8 +93,6 @@ class ImageProcessor:
             "slug": photo.slug,
             "original_file_id": original_file_id,
             "thumbnail_file_id": thumb_file_id,
-            "original_url": original_url,
-            "thumbnail_url": thumb_url,
             "width": width,
             "height": height,
             "created_at": photo.created_at.isoformat(),

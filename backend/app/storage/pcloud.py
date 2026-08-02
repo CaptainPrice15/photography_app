@@ -89,6 +89,20 @@ class PCloudStorage(StorageInterface):
         path = data["path"]
         return f"https://{host}{path}"
 
+    async def download_file(self, file_id: int) -> bytes:
+        data = await self._request("getfilelink", params={"fileid": file_id})
+        if data.get("result") != 0:
+            raise Exception(f"pCloud get link failed: {data.get('error')}")
+        host = data["hosts"][0]
+        path = data["path"]
+        url = f"https://{host}{path}"
+        if data.get("auth"):
+            url += "?auth=" + data["auth"]
+        async with httpx.AsyncClient(timeout=120) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.content
+
     async def get_thumb_link(
         self, file_id: int, width: int = 800, height: int = 600
     ) -> str:
