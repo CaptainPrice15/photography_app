@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, Monitor, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PhotoGrid, PhotoLightbox } from "@/components/gallery";
+import api from "@/lib/api";
 
 interface Exhibition {
   id: string;
@@ -47,15 +48,6 @@ const MOCK_EXHIBITION: Exhibition = {
   is_virtual: false,
 };
 
-const MOCK_PHOTOS: Photo[] = [
-  { id: "1", title: "Mountain Sunrise", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Landscapes", is_free: false, price: 49.99, view_count: 1250 },
-  { id: "2", title: "Urban Street", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 890 },
-  { id: "3", title: "City Lights", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 780 },
-  { id: "4", title: "Forest Path", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Nature", is_free: false, price: 44.99, view_count: 1890 },
-  { id: "5", title: "Architecture", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Architecture", is_free: false, price: 54.99, view_count: 1450 },
-  { id: "6", title: "Night City", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 930 },
-];
-
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
     month: "long",
@@ -72,11 +64,38 @@ export default function ExhibitionDetailPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    setTimeout(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoading(true);
       setExhibition(MOCK_EXHIBITION);
-      setPhotos(MOCK_PHOTOS);
-      setIsLoading(false);
-    }, 500);
+
+      try {
+        const { data } = await api.get("/photos/all");
+        if (cancelled) return;
+        const items = Array.isArray(data) ? data : data.items || [];
+        const mapped: Photo[] = items.map((p: { id: string; title?: string; alt?: string; src?: string; thumbnail_url?: string; original_url?: string; collectionId?: string }) => ({
+          id: p.id,
+          title: p.title || p.alt || "",
+          thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
+          original_url: p.src || p.original_url || undefined,
+          category: p.collectionId || undefined,
+          is_free: true,
+          price: undefined,
+          view_count: undefined,
+        }));
+        setPhotos(mapped);
+      } catch {
+        if (!cancelled) setPhotos([]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [params.id]);
 
   if (isLoading) {
@@ -100,7 +119,7 @@ export default function ExhibitionDetailPage() {
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Exhibition Not Found</h1>
         <p className="text-muted-foreground mb-6">
-          The exhibition you're looking for doesn't exist or has been removed.
+          The exhibition you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
         <Link
           href="/exhibitions"
@@ -130,9 +149,9 @@ export default function ExhibitionDetailPage() {
 
         {/* Exhibition hero */}
         <div className="relative aspect-[21/9] overflow-hidden rounded-lg bg-muted">
-          {exhibition.cover_image_url ? (
+          {(exhibition.cover_image_url || photos[0]?.original_url || photos[0]?.thumbnail_url) ? (
             <Image
-              src={exhibition.cover_image_url}
+              src={exhibition.cover_image_url || photos[0]?.original_url || photos[0]?.thumbnail_url || ""}
               alt={exhibition.title}
               fill
               className="object-cover"

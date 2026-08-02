@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import Image from "next/image";
+import { useEffect, useCallback, useState, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";import Image from "next/image";
 import {
   X,
   ChevronLeft,
@@ -61,9 +60,24 @@ export function PhotoLightbox({
   const [isZoomed, setIsZoomed] = useState(false);
   const [isRoomPreviewOpen, setIsRoomPreviewOpen] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
+  const prevIndexRef = useRef(currentIndex);
 
   const currentPhoto = photos[currentIndex];
   const currentUrl = currentPhoto?.original_url || currentPhoto?.thumbnail_url || "";
+
+  useEffect(() => {
+    if (prevIndexRef.current !== currentIndex) {
+      setSlideDirection(currentIndex > prevIndexRef.current ? 1 : -1);
+      prevIndexRef.current = currentIndex;
+    }
+  }, [currentIndex]);
+
+  const slideVariants = {
+    enter: (dir: 1 | -1) => ({ x: dir * 80, opacity: 0 }),
+    center: () => ({ x: 0, opacity: 1, scale: isZoomed ? 1.4 : 1 }),
+    exit: (dir: 1 | -1) => ({ x: dir * -80, opacity: 0 }),
+  };
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -232,23 +246,29 @@ export function PhotoLightbox({
                   />
                 </div>
               ) : (
-                <motion.div
-                  key={currentPhoto.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: isZoomed ? 1.4 : 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.25 }}
-                  className="relative max-w-[85vw] max-h-[85vh] w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
-                >
-                  <Image
-                    src={currentUrl}
-                    alt={currentPhoto.title}
-                    fill
-                    className="object-contain"
-                    sizes="90vw"
-                    priority
-                  />
-                </motion.div>
+                <AnimatePresence initial={false} custom={slideDirection}>
+                  <motion.div
+                    key={currentPhoto.id}
+                    custom={slideDirection}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="absolute inset-0 flex items-center justify-center"
+                  >
+                    <div className="relative max-w-[85vw] max-h-[85vh] w-full h-full">
+                      <Image
+                        src={currentUrl}
+                        alt={currentPhoto.title}
+                        fill
+                        className="object-contain"
+                        sizes="90vw"
+                        priority
+                      />
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
               )}
             </div>
 
