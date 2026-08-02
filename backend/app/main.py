@@ -11,6 +11,11 @@ from app.middleware.logging_middleware import RequestLoggingMiddleware
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    from app.api.deps import init_db
+    try:
+        await init_db()
+    except Exception as e:
+        print(f"Startup init_db warning: {e}")
     yield
     # Shutdown
 

@@ -1,4 +1,6 @@
-from typing import Optional, List
+from datetime import datetime
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -12,13 +14,13 @@ class CommentUpdate(BaseModel):
 
 
 class CommentResponse(BaseModel):
-    id: str
-    user_id: str
-    photo_id: str
+    id: Union[UUID, str]
+    user_id: Union[UUID, str]
+    photo_id: Union[UUID, str]
     content: str
     is_approved: bool
-    created_at: str
-    updated_at: str
+    created_at: Union[datetime, str]
+    updated_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 

@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -68,7 +69,7 @@ class PhotoUpdate(BaseModel):
 
 
 class PhotoResponse(BaseModel):
-    id: str
+    id: Union[UUID, str]
     title: str
     slug: str
     description: Optional[str] = None
@@ -87,7 +88,7 @@ class PhotoResponse(BaseModel):
     aperture: Optional[str] = None
     shutter_speed: Optional[str] = None
     iso: Optional[int] = None
-    taken_at: Optional[datetime] = None
+    taken_at: Optional[Union[datetime, str]] = None
     location_name: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
@@ -99,10 +100,10 @@ class PhotoResponse(BaseModel):
     download_count: int
     tags: List[str]
     has_watermark: bool
-    category_id: Optional[str] = None
-    uploaded_by: str
-    created_at: str
-    updated_at: str
+    category_id: Optional[Union[UUID, str]] = None
+    uploaded_by: Union[UUID, str]
+    created_at: Union[datetime, str]
+    updated_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 

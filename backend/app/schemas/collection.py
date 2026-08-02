@@ -1,4 +1,6 @@
-from typing import Optional, List
+from datetime import datetime
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -15,13 +17,13 @@ class CollectionUpdate(BaseModel):
 
 
 class CollectionResponse(BaseModel):
-    id: str
+    id: Union[UUID, str]
     name: str
-    user_id: str
+    user_id: Union[UUID, str]
     description: Optional[str] = None
     is_public: bool
-    created_at: str
-    updated_at: str
+    created_at: Union[datetime, str]
+    updated_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 
@@ -35,4 +37,4 @@ class CollectionListResponse(BaseModel):
 
 
 class CollectionPhotoRequest(BaseModel):
-    photo_id: str
+    photo_id: Union[UUID, str]

@@ -1,4 +1,6 @@
-from typing import Optional, List
+from datetime import datetime
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -6,7 +8,7 @@ class AlbumCreate(BaseModel):
     title: str
     slug: str
     description: Optional[str] = None
-    cover_photo_id: Optional[str] = None
+    cover_photo_id: Optional[Union[UUID, str]] = None
     is_published: bool = True
     is_featured: bool = False
     sort_order: int = 0
@@ -16,24 +18,24 @@ class AlbumUpdate(BaseModel):
     title: Optional[str] = None
     slug: Optional[str] = None
     description: Optional[str] = None
-    cover_photo_id: Optional[str] = None
+    cover_photo_id: Optional[Union[UUID, str]] = None
     is_published: Optional[bool] = None
     is_featured: Optional[bool] = None
     sort_order: Optional[int] = None
 
 
 class AlbumResponse(BaseModel):
-    id: str
+    id: Union[UUID, str]
     title: str
     slug: str
     description: Optional[str] = None
-    cover_photo_id: Optional[str] = None
+    cover_photo_id: Optional[Union[UUID, str]] = None
     is_published: bool
     is_featured: bool
     sort_order: int
     photo_count: int
-    created_at: str
-    updated_at: str
+    created_at: Union[datetime, str]
+    updated_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 
@@ -47,5 +49,6 @@ class AlbumListResponse(BaseModel):
 
 
 class AlbumPhotoRequest(BaseModel):
-    photo_id: str
+    photo_id: Union[UUID, str]
     sort_order: int = 0
+

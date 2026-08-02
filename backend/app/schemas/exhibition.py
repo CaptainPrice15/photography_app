@@ -1,5 +1,6 @@
-from datetime import date
-from typing import Optional, List
+from datetime import date, datetime
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -36,7 +37,7 @@ class ExhibitionUpdate(BaseModel):
 
 
 class ExhibitionResponse(BaseModel):
-    id: str
+    id: Union[UUID, str]
     title: str
     slug: str
     description: str
@@ -50,8 +51,8 @@ class ExhibitionResponse(BaseModel):
     is_virtual: bool
     exhibition_url: Optional[str] = None
     is_published: bool
-    created_at: str
-    updated_at: str
+    created_at: Union[datetime, str]
+    updated_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 
@@ -65,5 +66,5 @@ class ExhibitionListResponse(BaseModel):
 
 
 class ExhibitionPhotoRequest(BaseModel):
-    photo_id: str
+    photo_id: Union[UUID, str]
     sort_order: int = 0

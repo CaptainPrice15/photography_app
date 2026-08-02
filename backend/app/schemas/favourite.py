@@ -1,16 +1,18 @@
-from typing import List
+from datetime import datetime
+from typing import List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
 class FavouriteRequest(BaseModel):
-    photo_id: str
+    photo_id: Union[UUID, str]
 
 
 class FavouriteResponse(BaseModel):
-    id: str
-    user_id: str
-    photo_id: str
-    created_at: str
+    id: Union[UUID, str]
+    user_id: Union[UUID, str]
+    photo_id: Union[UUID, str]
+    created_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 

@@ -1,4 +1,6 @@
-from typing import Optional
+from datetime import datetime
+from typing import Optional, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -17,11 +19,11 @@ class CategoryUpdate(BaseModel):
 
 
 class CategoryResponse(BaseModel):
-    id: str
+    id: Union[UUID, str]
     name: str
     slug: str
     description: Optional[str] = None
     sort_order: int
-    created_at: str
+    created_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}

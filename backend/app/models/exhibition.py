@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime
-from sqlalchemy import String, Text, Boolean, Date, DateTime, ForeignKey, Table, Column
+from sqlalchemy import String, Text, Boolean, Date, DateTime, ForeignKey, Table, Column, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,7 +11,7 @@ exhibition_photos = Table(
     Base.metadata,
     Column("exhibition_id", UUID(as_uuid=True), ForeignKey("exhibitions.id"), primary_key=True),
     Column("photo_id", UUID(as_uuid=True), ForeignKey("photos.id"), primary_key=True),
-    Column("sort_order", nullable=False, default=0),
+    Column("sort_order", Integer, nullable=False, default=0),
 )
 
 

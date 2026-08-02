@@ -1,11 +1,13 @@
-from typing import Optional, List
+from datetime import datetime
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
 class UploadRequest(BaseModel):
     title: str
     description: Optional[str] = None
-    category_id: Optional[str] = None
+    category_id: Optional[Union[UUID, str]] = None
     tags: List[str] = []
     price: Optional[float] = None
     is_free: bool = False
@@ -13,7 +15,7 @@ class UploadRequest(BaseModel):
 
 
 class UploadResponse(BaseModel):
-    id: str
+    id: Union[UUID, str]
     title: str
     slug: str
     original_file_id: str
@@ -24,6 +26,6 @@ class UploadResponse(BaseModel):
     height: int
     file_size: int
     format: str
-    created_at: str
+    created_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}

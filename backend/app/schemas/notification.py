@@ -1,16 +1,18 @@
-from typing import Optional, List
+from datetime import datetime
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
 class NotificationResponse(BaseModel):
-    id: str
-    user_id: str
+    id: Union[UUID, str]
+    user_id: Union[UUID, str]
     title: str
     message: str
     type: str
     is_read: bool
     link: Optional[str] = None
-    created_at: str
+    created_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 
@@ -24,4 +26,4 @@ class NotificationListResponse(BaseModel):
 
 
 class NotificationMarkRead(BaseModel):
-    notification_ids: List[str]
+    notification_ids: List[Union[UUID, str]]

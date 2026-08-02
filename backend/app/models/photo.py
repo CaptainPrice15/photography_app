@@ -48,7 +48,7 @@ class Photo(Base, TimestampMixin):
     view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     download_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    tags: Mapped[list[str]] = mapped_column(ARRAY(String), default=[], nullable=False)
+    tags: Mapped[list[str]] = mapped_column(ARRAY(String).with_variant(JSON, "sqlite"), default=[], nullable=False)
     has_watermark: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     category_id: Mapped[uuid.UUID | None] = mapped_column(

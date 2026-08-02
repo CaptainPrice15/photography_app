@@ -1,9 +1,11 @@
-from typing import Optional
+from datetime import datetime
+from typing import Optional, Union
+from uuid import UUID
 from pydantic import BaseModel, EmailStr
 
 
 class UserResponse(BaseModel):
-    id: str
+    id: Union[UUID, str]
     email: str
     username: str
     full_name: str
@@ -11,7 +13,7 @@ class UserResponse(BaseModel):
     bio: Optional[str] = None
     role: str
     is_verified: bool
-    created_at: str
+    created_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 

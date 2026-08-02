@@ -1,15 +1,16 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel
 
 
 class OrderItemResponse(BaseModel):
-    id: str
-    order_id: str
-    photo_id: str
+    id: Union[UUID, str]
+    order_id: Union[UUID, str]
+    photo_id: Union[UUID, str]
     photo_title: str
     price: float
-    created_at: str
+    created_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 
@@ -21,9 +22,9 @@ class OrderCreate(BaseModel):
 
 
 class OrderResponse(BaseModel):
-    id: str
+    id: Union[UUID, str]
     order_number: str
-    user_id: str
+    user_id: Union[UUID, str]
     status: str
     total_amount: float
     currency: str
@@ -33,10 +34,10 @@ class OrderResponse(BaseModel):
     payment_status: Optional[str] = None
     billing_name: Optional[str] = None
     billing_email: Optional[str] = None
-    paid_at: Optional[datetime] = None
+    paid_at: Optional[Union[datetime, str]] = None
     items: List[OrderItemResponse]
-    created_at: str
-    updated_at: str
+    created_at: Union[datetime, str]
+    updated_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
 
