@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { PhotoGrid, PhotoFilters } from "@/components/gallery";
+import { PhotoGrid, PhotoFilters, PhotoLightbox } from "@/components/gallery";
 import { useDebounce } from "@/hooks/useDebounce";
 import api from "@/lib/api";
 
@@ -11,6 +11,7 @@ interface Photo {
   id: string;
   title: string;
   thumbnail_url: string;
+  original_url?: string;
   category?: string;
   is_free: boolean;
   price?: number;
@@ -26,6 +27,7 @@ export default function GalleryPage() {
   const [category, setCategory] = useState(searchParams.get("category") || "all");
   const [sort, setSort] = useState(searchParams.get("sort") || "newest");
   const [isLoading, setIsLoading] = useState(true);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const debouncedSearch = useDebounce(search, 500);
 
@@ -44,6 +46,7 @@ export default function GalleryPage() {
           id: p.id,
           title: p.title || p.alt || "",
           thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
+          original_url: p.src || p.original_url || undefined,
           category: p.collectionId || undefined,
           is_free: true,
           price: undefined,
@@ -158,7 +161,29 @@ export default function GalleryPage() {
             photos={photos}
             onFavourite={handleFavourite}
             onAddToCart={handleAddToCart}
+            onOpenLightbox={(photo) => {
+              const idx = photos.findIndex((p) => p.id === photo.id);
+              setLightboxIndex(idx >= 0 ? idx : 0);
+            }}
           />
+
+          {/* Lightbox */}
+          {lightboxIndex !== null && (
+            <PhotoLightbox
+              photos={photos}
+              currentIndex={lightboxIndex}
+              isOpen={lightboxIndex !== null}
+              onClose={() => setLightboxIndex(null)}
+              onNext={() =>
+                setLightboxIndex((prev) =>
+                  prev !== null && prev < photos.length - 1 ? prev + 1 : prev
+                )
+              }
+              onPrevious={() =>
+                setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))
+              }
+            />
+          )}
 
           {/* Empty state */}
           {photos.length === 0 && (

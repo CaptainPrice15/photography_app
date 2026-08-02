@@ -27,7 +27,7 @@ import { BeforeAfterSlider } from "@/components/photo/BeforeAfterSlider";
 interface Photo {
   id: string;
   title: string;
-  original_url: string;
+  original_url?: string;
   thumbnail_url?: string;
   camera_make?: string;
   camera_model?: string;
@@ -63,6 +63,7 @@ export function PhotoLightbox({
   const [showCompare, setShowCompare] = useState(false);
 
   const currentPhoto = photos[currentIndex];
+  const currentUrl = currentPhoto?.original_url || currentPhoto?.thumbnail_url || "";
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -224,7 +225,7 @@ export function PhotoLightbox({
                 <div className="w-full max-w-4xl">
                   <BeforeAfterSlider
                     beforeImage={currentPhoto.thumbnail_url}
-                    afterImage={currentPhoto.original_url}
+                    afterImage={currentUrl}
                     beforeLabel="RAW Original"
                     afterLabel="Final Color Grade"
                     alt={currentPhoto.title}
@@ -240,7 +241,7 @@ export function PhotoLightbox({
                   className="relative max-w-[85vw] max-h-[85vh] w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
                 >
                   <Image
-                    src={currentPhoto.original_url}
+                    src={currentUrl}
                     alt={currentPhoto.title}
                     fill
                     className="object-contain"
@@ -360,7 +361,7 @@ export function PhotoLightbox({
         <RoomPreviewModal
           isOpen={isRoomPreviewOpen}
           onClose={() => setIsRoomPreviewOpen(false)}
-          photoUrl={currentPhoto.original_url}
+          photoUrl={currentUrl}
           photoTitle={currentPhoto.title}
         />
       )}

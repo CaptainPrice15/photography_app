@@ -1,17 +1,18 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { PhotoGrid } from "@/components/gallery";
+import { PhotoGrid, PhotoLightbox } from "@/components/gallery";
 import { useAlbumDetail } from "@/hooks/useAlbums";
 
 export default function AlbumDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { album, photos, isLoading, error } = useAlbumDetail(id);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (isLoading) {
     return (
@@ -109,9 +110,33 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
             <h2 className="font-heading font-bold text-2xl">Series Photographs</h2>
             <span className="text-xs text-muted-foreground font-mono">{photos.length} items</span>
           </div>
-          <PhotoGrid photos={photos} />
+          <PhotoGrid
+            photos={photos}
+            onOpenLightbox={(photo) => {
+              const idx = photos.findIndex((p) => p.id === photo.id);
+              setLightboxIndex(idx >= 0 ? idx : 0);
+            }}
+          />
         </section>
       </motion.div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={photos}
+          currentIndex={lightboxIndex}
+          isOpen={lightboxIndex !== null}
+          onClose={() => setLightboxIndex(null)}
+          onNext={() =>
+            setLightboxIndex((prev) =>
+              prev !== null && prev < photos.length - 1 ? prev + 1 : prev
+            )
+          }
+          onPrevious={() =>
+            setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))
+          }
+        />
+      )}
     </div>
   );
 }

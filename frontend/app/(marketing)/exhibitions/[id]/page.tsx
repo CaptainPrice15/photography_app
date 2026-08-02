@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, Monitor, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { PhotoGrid } from "@/components/gallery";
+import { PhotoGrid, PhotoLightbox } from "@/components/gallery";
 
 interface Exhibition {
   id: string;
@@ -27,6 +27,7 @@ interface Photo {
   id: string;
   title: string;
   thumbnail_url: string;
+  original_url?: string;
   category?: string;
   is_free: boolean;
   price?: number;
@@ -47,12 +48,12 @@ const MOCK_EXHIBITION: Exhibition = {
 };
 
 const MOCK_PHOTOS: Photo[] = [
-  { id: "1", title: "Mountain Sunrise", thumbnail_url: "/images/placeholder.jpg", category: "Landscapes", is_free: false, price: 49.99, view_count: 1250 },
-  { id: "2", title: "Urban Street", thumbnail_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 890 },
-  { id: "3", title: "City Lights", thumbnail_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 780 },
-  { id: "4", title: "Forest Path", thumbnail_url: "/images/placeholder.jpg", category: "Nature", is_free: false, price: 44.99, view_count: 1890 },
-  { id: "5", title: "Architecture", thumbnail_url: "/images/placeholder.jpg", category: "Architecture", is_free: false, price: 54.99, view_count: 1450 },
-  { id: "6", title: "Night City", thumbnail_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 930 },
+  { id: "1", title: "Mountain Sunrise", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Landscapes", is_free: false, price: 49.99, view_count: 1250 },
+  { id: "2", title: "Urban Street", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 890 },
+  { id: "3", title: "City Lights", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 780 },
+  { id: "4", title: "Forest Path", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Nature", is_free: false, price: 44.99, view_count: 1890 },
+  { id: "5", title: "Architecture", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Architecture", is_free: false, price: 54.99, view_count: 1450 },
+  { id: "6", title: "Night City", thumbnail_url: "/images/placeholder.jpg", original_url: "/images/placeholder.jpg", category: "Street", is_free: true, view_count: 930 },
 ];
 
 function formatDate(dateString: string) {
@@ -68,6 +69,7 @@ export default function ExhibitionDetailPage() {
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setTimeout(() => {
@@ -225,9 +227,33 @@ export default function ExhibitionDetailPage() {
         {/* Photos grid */}
         <section>
           <h2 className="text-2xl font-bold mb-6">Exhibition Photos</h2>
-          <PhotoGrid photos={photos} />
+          <PhotoGrid
+            photos={photos}
+            onOpenLightbox={(photo) => {
+              const idx = photos.findIndex((p) => p.id === photo.id);
+              setLightboxIndex(idx >= 0 ? idx : 0);
+            }}
+          />
         </section>
       </motion.div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={photos}
+          currentIndex={lightboxIndex}
+          isOpen={lightboxIndex !== null}
+          onClose={() => setLightboxIndex(null)}
+          onNext={() =>
+            setLightboxIndex((prev) =>
+              prev !== null && prev < photos.length - 1 ? prev + 1 : prev
+            )
+          }
+          onPrevious={() =>
+            setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))
+          }
+        />
+      )}
     </div>
   );
 }
