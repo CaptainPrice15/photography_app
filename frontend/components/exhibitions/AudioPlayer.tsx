@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Pause, Volume2, VolumeX, Music, Headphones } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 

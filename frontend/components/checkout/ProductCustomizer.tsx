@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Printer, Check, ShieldCheck, Sparkles } from "lucide-react";
+import { Download, Printer, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -9,7 +9,7 @@ export type LicenseType = "personal" | "commercial" | "exclusive";
 export type PaperFinish = "hahnemuhle" | "metallic" | "velvet";
 
 interface ProductCustomizerProps {
-  photoTitle: string;
+  photoTitle?: string;
   basePrice: number;
   onSelectOption?: (details: {
     type: "digital" | "print";
@@ -38,7 +38,7 @@ const PAPER_FINISHES = [
   { id: "velvet", name: "Somerset Velvet Fine Art", desc: "Soft matte finish for dramatic contrast and deep blacks" },
 ];
 
-export function ProductCustomizer({ photoTitle, basePrice, onSelectOption }: ProductCustomizerProps) {
+export function ProductCustomizer({ basePrice, onSelectOption }: ProductCustomizerProps) {
   const [productType, setProductType] = useState<"digital" | "print">("digital");
   const [selectedLicense, setSelectedLicense] = useState<LicenseType>("personal");
   const [selectedSize, setSelectedSize] = useState(PRINT_SIZES[0]);

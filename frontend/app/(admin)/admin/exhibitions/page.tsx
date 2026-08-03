@@ -37,7 +37,7 @@ export default function ExhibitionsPage() {
   const fetchExhibitions = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, any> = {};
+      const params: Record<string, string> = {};
       if (debouncedSearch) params.search = debouncedSearch;
 
       const { data } = await api.get("/exhibitions", { params });
@@ -51,7 +51,10 @@ export default function ExhibitionsPage() {
   }, [debouncedSearch]);
 
   useEffect(() => {
-    fetchExhibitions();
+    const run = async () => {
+      await fetchExhibitions();
+    };
+    void run();
   }, [fetchExhibitions]);
 
   const handleDelete = async (id: string) => {

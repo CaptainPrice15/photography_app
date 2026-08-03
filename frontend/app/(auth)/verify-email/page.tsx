@@ -2,38 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
 
 export default function VerifyEmailPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const { verifyEmail } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
 
-  const verify = async () => {
-    if (!token) {
-      setStatus("error");
-      return;
-    }
-
-    try {
-      await verifyEmail(token);
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    }
-  };
-
   useEffect(() => {
-    verify();
-  }, [token]);
+    const run = async () => {
+      if (!token) {
+        setStatus("error");
+        return;
+      }
+
+      try {
+        await verifyEmail(token);
+        setStatus("success");
+      } catch {
+        setStatus("error");
+      }
+    };
+    void run();
+  }, [token, verifyEmail]);
 
   if (status === "loading") {
     return (

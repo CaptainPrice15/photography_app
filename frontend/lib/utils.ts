@@ -1,5 +1,5 @@
-export function cn(...classes: any[]) {
-  return classes.filter((c) => typeof c === "string").join(" ");
+export function cn(...classes: unknown[]) {
+  return classes.filter((c): c is string => typeof c === "string").join(" ");
 }
 
 export function formatDate(date: string) {

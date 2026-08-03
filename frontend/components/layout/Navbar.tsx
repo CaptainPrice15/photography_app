@@ -14,7 +14,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { CartSidebar } from "@/components/cart";
 import { KeyboardShortcutsModal } from "@/components/shared";
-import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const router = useRouter();

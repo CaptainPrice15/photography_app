@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  TableBody,
   TableCell,
   TableRow,
 } from "@/components/ui/table";

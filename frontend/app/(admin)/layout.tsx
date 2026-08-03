@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Camera, FolderOpen, Tag, Calendar, Users, ShoppingCart, Download, Settings, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const ADMIN_NAV = [

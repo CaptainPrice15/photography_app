@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Command, X, Search, Image as ImageIcon, Heart, ShoppingBag, Map, HelpCircle } from "lucide-react";
+import { Command, X, Search, Image as ImageIcon, Heart, ShoppingBag, Map, HelpCircle, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Shortcut {
   key: string;
   description: string;
-  icon?: any;
+  icon?: LucideIcon;
 }
 
 const SHORTCUTS: Shortcut[] = [

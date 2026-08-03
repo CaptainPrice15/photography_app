@@ -16,7 +16,7 @@ interface PhotoCardProps {
   photo: PhotoItem;
   onFavourite?: (id: string) => void;
   onAddToCart?: (id: string) => void;
-  onOpenLightbox?: (photo: any) => void;
+  onOpenLightbox?: (photo: PhotoItem) => void;
 }
 
 export function PhotoCard({ photo, onFavourite, onAddToCart, onOpenLightbox }: PhotoCardProps) {

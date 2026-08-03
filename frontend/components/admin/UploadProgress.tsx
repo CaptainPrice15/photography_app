@@ -65,6 +65,7 @@ export function UploadProgress({ files }: UploadProgressProps) {
               className="flex items-center gap-3 rounded-md border p-2"
             >
               <div className="h-10 w-10 rounded bg-muted overflow-hidden flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element -- blob preview URL cannot use next/image */}
                 <img
                   src={file.preview}
                   alt=""

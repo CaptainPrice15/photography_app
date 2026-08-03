@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import type { User } from "@/lib/types";
 
 export function useAuth() {
   const { user, isAuthenticated, isLoading, setUser, login: storeLogin, logout: storeLogout, setLoading } = useAuthStore();

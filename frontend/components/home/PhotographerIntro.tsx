@@ -47,7 +47,7 @@ export function PhotographerIntro() {
           >
             <h2 className="text-3xl font-bold mb-6">About the Photographer</h2>
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              With over 15 years of experience capturing the world's most breathtaking
+              With over 15 years of experience capturing the world&apos;s most breathtaking
               moments, I specialize in landscape, portrait, and street photography.
               My work has been featured in numerous galleries and publications worldwide.
             </p>

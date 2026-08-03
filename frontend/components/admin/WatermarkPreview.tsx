@@ -66,17 +66,18 @@ export function WatermarkPreview({
         <CardContent className="space-y-4">
           <div className="relative aspect-video rounded-lg overflow-hidden bg-muted border">
             {imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- raw preview URL rendered as-is
               <img
                 src={imageUrl}
                 alt="Preview"
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                No image selected
-              </div>
-            )}
-            <div
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  No image selected
+                </div>
+              )
+            }            <div
               className={`absolute ${POSITION_STYLES[previewPosition]} pointer-events-none`}
               style={{ opacity: previewOpacity / 100 }}
             >

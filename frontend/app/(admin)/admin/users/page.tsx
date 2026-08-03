@@ -47,7 +47,10 @@ export default function UsersPage() {
   }, []);
 
   useEffect(() => {
-    fetchUsers();
+    const run = async () => {
+      await fetchUsers();
+    };
+    void run();
   }, [fetchUsers]);
 
   const handleToggleActive = async (id: string, active: boolean) => {

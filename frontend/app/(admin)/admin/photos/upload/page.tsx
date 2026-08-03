@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
   Upload,
@@ -47,6 +46,16 @@ export default function UploadPhotosPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [categories] = useState<{ id: string; name: string }[]>([]);
 
+  const addFiles = useCallback((newFiles: File[]) => {
+    const uploadFiles: UploadFile[] = newFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      status: "pending" as const,
+      progress: 0,
+    }));
+    setFiles((prev) => [...prev, ...uploadFiles]);
+  }, []);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -57,28 +66,21 @@ export default function UploadPhotosPage() {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const droppedFiles = Array.from(e.dataTransfer.files).filter((f) =>
-      f.type.startsWith("image/")
-    );
-    addFiles(droppedFiles);
-  }, []);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const droppedFiles = Array.from(e.dataTransfer.files).filter((f) =>
+        f.type.startsWith("image/")
+      );
+      addFiles(droppedFiles);
+    },
+    [addFiles]
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     addFiles(selectedFiles);
-  };
-
-  const addFiles = (newFiles: File[]) => {
-    const uploadFiles: UploadFile[] = newFiles.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      status: "pending" as const,
-      progress: 0,
-    }));
-    setFiles((prev) => [...prev, ...uploadFiles]);
   };
 
   const removeFile = (index: number) => {
@@ -243,6 +245,7 @@ export default function UploadPhotosPage() {
                       className="relative group"
                     >
                       <div className="aspect-square rounded-lg overflow-hidden bg-muted border">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- blob preview URL cannot use next/image */}
                         <img
                           src={uploadFile.preview}
                           alt={`Upload ${index + 1}`}

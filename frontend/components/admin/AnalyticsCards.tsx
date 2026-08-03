@@ -1,8 +1,15 @@
 "use client";
 
 import { motion } from "motion/react";
-import { TrendingUp, TrendingDown, Minus, DollarSign, Users, Image, Download, ShoppingCart } from "lucide-react";
+import { DollarSign, Users, Image as ImageIcon, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+interface AnalyticsStats {
+  total_photos?: number;
+  total_users?: number;
+  total_revenue?: number;
+  total_downloads?: number;
+}
 
 interface StatCardProps {
   title: string;
@@ -12,12 +19,12 @@ interface StatCardProps {
   iconColor: string;
 }
 
-export function AnalyticsCards({ stats }: { stats: any }) {
+export function AnalyticsCards({ stats }: { stats: AnalyticsStats | null | undefined }) {
   const cards: StatCardProps[] = [
     {
       title: "Total Photos",
       value: stats?.total_photos || 0,
-      icon: <Image className="h-5 w-5" />,
+      icon: <ImageIcon className="h-5 w-5" aria-hidden="true" />,
       iconColor: "text-blue-500",
     },
     {

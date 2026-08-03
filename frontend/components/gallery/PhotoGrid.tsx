@@ -18,7 +18,7 @@ interface PhotoGridProps {
   columns?: 2 | 3 | 4;
   onFavourite?: (id: string) => void;
   onAddToCart?: (id: string) => void;
-  onOpenLightbox?: (photo: any) => void;
+  onOpenLightbox?: (photo: PhotoItem) => void;
 }
 
 export function PhotoGrid({

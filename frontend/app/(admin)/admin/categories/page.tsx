@@ -65,7 +65,10 @@ export default function CategoriesPage() {
   };
 
   useEffect(() => {
-    fetchCategories();
+    const run = async () => {
+      await fetchCategories();
+    };
+    void run();
   }, []);
 
   const onSubmit = async (data: CategoryFormInput) => {

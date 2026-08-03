@@ -26,7 +26,7 @@ export default function ContactPage() {
     },
   });
 
-  const onSubmit = async (data: ContactInput) => {
+  const onSubmit = async () => {
     setIsLoading(true);
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));

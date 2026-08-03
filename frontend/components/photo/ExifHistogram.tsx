@@ -16,14 +16,15 @@ export function ExifHistogram({ iso = 100, aperture = "2.8", shutter_speed = "1/
     for (let i = 0; i < 32; i++) {
       const x = i / 31;
       // Bell curve formula centered near midtones
-      const r = Math.sin(x * Math.PI) * 70 + Math.random() * 10;
-      const g = Math.sin(x * Math.PI * 0.9 + 0.1) * 85 + Math.random() * 8;
-      const b = Math.sin(x * Math.PI * 1.1) * 65 + Math.random() * 12;
-      const lum = (r * 0.3 + g * 0.59 + b * 0.11);
+      const noise = Math.abs(Math.sin(i * 1.7)) * 10;
+      const r = Math.sin(x * Math.PI) * 70 + noise;
+      const g = Math.sin(x * Math.PI * 0.9 + 0.1) * 85 + noise * 0.8;
+      const b = Math.sin(x * Math.PI * 1.1) * 65 + noise * 1.2;
+      const lum = r * 0.3 + g * 0.59 + b * 0.11;
       points.push({ x: i * (280 / 31), r, g, b, lum });
     }
     return points;
-  }, [iso, aperture, shutter_speed]);
+  }, []);
 
   const pathR = `M 0 100 ` + histogramData.map(p => `L ${p.x} ${100 - p.r}`).join(" ") + ` L 280 100 Z`;
   const pathG = `M 0 100 ` + histogramData.map(p => `L ${p.x} ${100 - p.g}`).join(" ") + ` L 280 100 Z`;

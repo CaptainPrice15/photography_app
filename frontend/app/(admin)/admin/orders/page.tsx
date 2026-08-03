@@ -37,7 +37,10 @@ export default function OrdersPage() {
   }, []);
 
   useEffect(() => {
-    fetchOrders();
+    const run = async () => {
+      await fetchOrders();
+    };
+    void run();
   }, [fetchOrders]);
 
   const handleRefund = async (id: string) => {

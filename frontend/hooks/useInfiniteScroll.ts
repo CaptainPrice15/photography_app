@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef } from "react";
 
 export function useInfiniteScroll(callback: () => void, hasMore: boolean) {
   const observer = useRef<IntersectionObserver | null>(null);

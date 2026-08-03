@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
-import { Plus, Search, Edit, Trash2, Image, MoreVertical, Eye } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Image as ImageIcon, MoreVertical, Eye } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -48,7 +48,7 @@ export default function AlbumsPage() {
   const fetchAlbums = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, string | number> = { page, limit };
       if (debouncedSearch) params.search = debouncedSearch;
 
       const { data } = await api.get("/albums", { params });
@@ -64,12 +64,16 @@ export default function AlbumsPage() {
   }, [page, debouncedSearch]);
 
   useEffect(() => {
-    fetchAlbums();
+    const run = async () => {
+      await fetchAlbums();
+    };
+    void run();
   }, [fetchAlbums]);
 
-  useEffect(() => {
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
     setPage(1);
-  }, [debouncedSearch]);
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this album?")) return;
@@ -105,7 +109,7 @@ export default function AlbumsPage() {
               <Input
                 placeholder="Search albums..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10 w-64"
               />
             </div>
@@ -150,11 +154,7 @@ export default function AlbumsPage() {
                     >
                       <TableCell className="w-20">
                         <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden">
-                          {album.cover_photo_id ? (
-                            <Image className="h-8 w-8 text-muted-foreground m-auto mt-4" />
-                          ) : (
-                            <Image className="h-8 w-8 text-muted-foreground m-auto mt-4" />
-                          )}
+                          <ImageIcon className="h-8 w-8 text-muted-foreground m-auto mt-4" aria-hidden="true" />
                         </div>
                       </TableCell>
                       <TableCell>

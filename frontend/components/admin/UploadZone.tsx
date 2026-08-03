@@ -2,8 +2,7 @@
 
 import { useCallback } from "react";
 import { motion } from "motion/react";
-import { Upload, X, Check, Image as ImageIcon, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Upload, X, Check, Sparkles } from "lucide-react";
 
 interface UploadFile {
   file: File;
@@ -92,6 +91,7 @@ export function UploadFilePreview({
       className="relative group rounded-2xl overflow-hidden border border-border/60 bg-card glass-panel p-1.5 shadow-md"
     >
       <div className="aspect-square rounded-xl overflow-hidden relative bg-muted">
+        {/* eslint-disable-next-line @next/next/no-img-element -- blob preview URL cannot use next/image */}
         <img
           src={uploadFile.preview}
           alt={`Upload ${index + 1}`}

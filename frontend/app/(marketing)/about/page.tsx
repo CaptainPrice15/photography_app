@@ -3,7 +3,6 @@
 import { motion } from "motion/react";
 import { Camera, Award, MapPin, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 export default function AboutPage() {
   return (

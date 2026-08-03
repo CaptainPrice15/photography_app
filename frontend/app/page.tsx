@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   HeroBanner,

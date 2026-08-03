@@ -25,7 +25,6 @@ export function ShareDialog({
   onOpenChange,
   title = "Share",
   url,
-  description,
 }: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
 

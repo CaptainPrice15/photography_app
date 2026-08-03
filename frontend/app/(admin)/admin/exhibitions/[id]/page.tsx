@@ -50,7 +50,7 @@ export default function EditExhibitionPage() {
         setIsVirtual(data.is_virtual);
         setExhibitionUrl(data.exhibition_url || "");
         setIsPublished(data.is_published);
-    } catch (err: unknown) {
+    } catch {
       toast.error("Failed to load exhibition");
         router.push("/admin/exhibitions");
       } finally {
@@ -83,8 +83,13 @@ export default function EditExhibitionPage() {
       });
       toast.success("Exhibition updated successfully");
       router.push("/admin/exhibitions");
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to update exhibition");
+    } catch (err) {
+      const message =
+        typeof err === "object" && err !== null && "response" in err
+          ? ((err.response as { data?: { detail?: string } })?.data?.detail ??
+            "Failed to update exhibition")
+          : "Failed to update exhibition";
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -274,6 +279,7 @@ export default function EditExhibitionPage() {
             <CardContent>
               {exhibition?.cover_image_url ? (
                 <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- external cover image */}
                   <img
                     src={exhibition.cover_image_url}
                     alt={exhibition.title}
