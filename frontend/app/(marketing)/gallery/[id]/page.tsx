@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Eye, Download, Share2, Tag, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Eye, Download, Tag, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import {
   ExifInfo,
   FavouriteButton,
@@ -19,91 +18,116 @@ import {
   RelatedPhotos,
   PhotoComments,
 } from "@/components/photo";
+import { useAuth } from "@/hooks/useAuth";
+import { useCartStore } from "@/store/cartStore";
+import api from "@/lib/api";
+import { toast } from "sonner";
+import type { Photo } from "@/lib/types";
 
-interface Photo {
+interface CommentView {
   id: string;
-  title: string;
-  description?: string;
-  original_url: string;
-  thumbnail_url: string;
-  width: number;
-  height: number;
-  category?: string;
-  tags: string[];
-  is_free: boolean;
-  price?: number;
-  view_count: number;
-  download_count: number;
-  location_name?: string;
-  camera_make?: string;
-  camera_model?: string;
-  lens?: string;
-  focal_length?: string;
-  aperture?: string;
-  shutter_speed?: string;
-  iso?: number;
-  taken_at?: string;
+  user: { username: string };
+  content: string;
+  created_at: string;
 }
-
-const MOCK_PHOTO: Photo = {
-  id: "1",
-  title: "Mountain Sunrise",
-  description: "A breathtaking view of the mountains at sunrise, capturing the golden light as it illuminates the peaks.",
-  original_url: "/images/placeholder.jpg",
-  thumbnail_url: "/images/placeholder.jpg",
-  width: 6000,
-  height: 4000,
-  category: "Landscapes",
-  tags: ["mountain", "sunrise", "landscape", "nature", "goldenhour"],
-  is_free: false,
-  price: 49.99,
-  view_count: 1250,
-  download_count: 85,
-  location_name: "Swiss Alps, Switzerland",
-  camera_make: "Sony",
-  camera_model: "A7R V",
-  lens: "FE 24-70mm GM II",
-  focal_length: "24mm",
-  aperture: "11",
-  shutter_speed: "1/125",
-  iso: 100,
-  taken_at: "2026-06-15T05:30:00",
-};
-
-const MOCK_RELATED = [
-  { id: "2", title: "Urban Street", thumbnail_url: "/images/placeholder.jpg" },
-  { id: "3", title: "Portrait Study", thumbnail_url: "/images/placeholder.jpg" },
-  { id: "4", title: "Ocean Waves", thumbnail_url: "/images/placeholder.jpg" },
-  { id: "5", title: "City Lights", thumbnail_url: "/images/placeholder.jpg" },
-];
-
-const MOCK_COMMENTS = [
-  {
-    id: "1",
-    user: { username: "alice" },
-    content: "Absolutely stunning composition! The light here is beautiful.",
-    created_at: "2026-07-20T10:00:00",
-  },
-  {
-    id: "2",
-    user: { username: "bob" },
-    content: "What an incredible moment captured. Love the colors.",
-    created_at: "2026-07-19T15:30:00",
-  },
-];
 
 export default function PhotoDetailPage() {
   const params = useParams();
+  const photoId = params.id as string;
   const [photo, setPhoto] = useState<Photo | null>(null);
+  const [related, setRelated] = useState<Photo[]>([]);
+  const [comments, setComments] = useState<CommentView[]>([]);
+  const [isFavourited, setIsFavourited] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, user } = useAuth();
+  const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setPhoto(MOCK_PHOTO);
-      setIsLoading(false);
-    }, 500);
-  }, [params.id]);
+    let cancelled = false;
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const [photoRes, relatedRes, commentsRes] = await Promise.all([
+          api.get(`/photos/${photoId}`),
+          api.get(`/photos/${photoId}/related`),
+          api.get(`/comments/${photoId}`),
+        ]);
+        if (cancelled) return;
+        setPhoto(photoRes.data);
+        setRelated(relatedRes.data ?? []);
+        const items: { id: string; user_id: string; content: string; created_at: string }[] =
+          commentsRes.data?.items ?? [];
+        setComments(
+          items.map((c) => ({
+            id: c.id,
+            user: {
+              username: user && String(c.user_id) === String(user.id) ? user.username : "Photographer",
+            },
+            content: c.content,
+            created_at: c.created_at,
+          }))
+        );
+        if (isAuthenticated) {
+          try {
+            const { data } = await api.get(`/favourites/check/${photoId}`);
+            setIsFavourited(data.is_favourited);
+          } catch {
+            setIsFavourited(false);
+          }
+        }
+      } catch {
+        setPhoto(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [photoId, isAuthenticated, user]);
+
+  const handleToggleFavourite = useCallback(
+    async (id: string) => {
+      if (!isAuthenticated) {
+        toast.error("Please login to save favourites");
+        return;
+      }
+      try {
+        await api.post("/favourites/toggle", { photo_id: id });
+        setIsFavourited((prev) => !prev);
+      } catch {
+        toast.error("Failed to update favourites");
+      }
+    },
+    [isAuthenticated]
+  );
+
+  const handleAddComment = useCallback(
+    async (_photoId: string, content: string) => {
+      try {
+        const { data } = await api.post(`/comments/${photoId}`, { content });
+        setComments((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            user: { username: user?.username || "You" },
+            content: data.content,
+            created_at: data.created_at,
+          },
+        ]);
+        toast.success("Comment posted");
+      } catch {
+        toast.error("Failed to post comment");
+      }
+    },
+    [photoId, user]
+  );
+
+  const handleAddToCart = useCallback(() => {
+    if (photo) addItem(photo);
+    toast.success("Added to cart");
+  }, [photo, addItem]);
 
   if (isLoading) {
     return (
@@ -121,7 +145,7 @@ export default function PhotoDetailPage() {
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Photo Not Found</h1>
         <p className="text-muted-foreground mb-6">
-          The photo you're looking for doesn't exist or has been removed.
+          The photo you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
         <Link
           href="/gallery"
@@ -154,10 +178,9 @@ export default function PhotoDetailPage() {
           {/* Photo */}
           <div className="lg:col-span-2">
             <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-muted">
-              <Image
-                src={photo.original_url}
+              <ProtectedImage
+                photo={photo}
                 alt={photo.title}
-                fill
                 className="object-contain"
                 priority
                 sizes="(max-width: 1024px) 100vw, 66vw"
@@ -184,9 +207,9 @@ export default function PhotoDetailPage() {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold mb-2">{photo.title}</h1>
-              {photo.category && (
-                <Link href={`/gallery?category=${photo.category.toLowerCase()}`}>
-                  <Badge variant="secondary">{photo.category}</Badge>
+              {photo.category_id && (
+                <Link href={`/gallery?category=${photo.category_id}`}>
+                  <Badge variant="secondary">{photo.category_id}</Badge>
                 </Link>
               )}
             </div>
@@ -210,13 +233,19 @@ export default function PhotoDetailPage() {
                 <AddToCartButton
                   photoId={photo.id}
                   price={photo.price}
+                  onAddToCart={handleAddToCart}
                 />
               )}
               <DownloadButton
                 photoId={photo.id}
                 isFree={photo.is_free}
+                price={photo.price}
               />
-              <FavouriteButton photoId={photo.id} />
+              <FavouriteButton
+                photoId={photo.id}
+                isFavourited={isFavourited}
+                onToggle={handleToggleFavourite}
+              />
               <ShareButton photoId={photo.id} title={photo.title} />
             </div>
 
@@ -235,7 +264,7 @@ export default function PhotoDetailPage() {
                 Tags
               </h3>
               <div className="flex flex-wrap gap-2">
-                {photo.tags.map((tag) => (
+                {(photo.tags || []).map((tag) => (
                   <Link
                     key={tag}
                     href={`/gallery?search=${tag}`}
@@ -266,7 +295,7 @@ export default function PhotoDetailPage() {
         {/* Related photos */}
         <section>
           <h2 className="text-2xl font-bold mb-6">Related Photos</h2>
-          <RelatedPhotos photos={MOCK_RELATED} />
+          <RelatedPhotos photos={related} />
         </section>
 
         {/* Comments */}
@@ -274,8 +303,9 @@ export default function PhotoDetailPage() {
           <CardContent className="p-6">
             <PhotoComments
               photoId={photo.id}
-              comments={MOCK_COMMENTS}
-              isAuthenticated={false}
+              comments={comments}
+              isAuthenticated={isAuthenticated}
+              onAddComment={handleAddComment}
             />
           </CardContent>
         </Card>

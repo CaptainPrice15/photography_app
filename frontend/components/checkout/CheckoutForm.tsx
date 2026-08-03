@@ -4,24 +4,22 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, CreditCard, MapPin, Mail, Phone, User } from "lucide-react";
+import { Loader2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/hooks/useCart";
+import api from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { checkoutSchema, type CheckoutInput } from "@/lib/validations";
-import { PAYMENT_PROVIDERS } from "@/lib/constants";
 import { PaymentSelector } from "./PaymentSelector";
-import { OrderSummary } from "./OrderSummary";
 import { toast } from "sonner";
 
 export function CheckoutForm() {
   const router = useRouter();
-  const { items, total, itemCount, clearCart } = useCart();
+  const { items, total, clearCart } = useCart();
   const [paymentProvider, setPaymentProvider] = useState("stripe");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -42,13 +40,21 @@ export function CheckoutForm() {
   const onSubmit = async (data: CheckoutInput) => {
     setIsLoading(true);
     try {
-      // In production, this would call the API to create an order and payment session
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+      const photoIds = items.map((item) => item.photo.id);
+      const { data: order } = await api.post("/orders", {
+        payment_provider: paymentProvider,
+        billing_name: data.full_name,
+        billing_email: data.email,
+        photo_ids: photoIds,
+      });
+
+      const { data: paidOrder } = await api.post(`/orders/${order.id}/mock-pay`);
+      const orderNumber = paidOrder.order_number || order.order_number;
+
       clearCart();
       toast.success("Order placed successfully!");
-      router.push("/checkout/success");
-    } catch (error) {
+      router.push(`/checkout/success?order=${encodeURIComponent(orderNumber)}`);
+    } catch {
       toast.error("Failed to place order. Please try again.");
     } finally {
       setIsLoading(false);

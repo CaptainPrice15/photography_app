@@ -2,16 +2,16 @@
 
 import { use, useState } from "react";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import { PhotoGrid, PhotoLightbox } from "@/components/gallery";
 import { useAlbumDetail } from "@/hooks/useAlbums";
 
 export default function AlbumDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { album, photos, isLoading, error } = useAlbumDetail(id);
+  const { album, photos, isLoading } = useAlbumDetail(id);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (isLoading) {
@@ -68,10 +68,9 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
         {album && (
           <div className="relative aspect-[21/9] overflow-hidden rounded-3xl bg-card border border-border/60 shadow-2xl glass-panel">
             {album.cover_photo_url ? (
-              <Image
-                src={album.cover_photo_url}
+              <ProtectedImage
+                photo={{ preview_url: album.cover_photo_url }}
                 alt={album.title}
-                fill
                 className="object-cover"
                 sizes="100vw"
                 priority

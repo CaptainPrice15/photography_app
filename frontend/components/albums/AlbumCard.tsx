@@ -1,10 +1,9 @@
 "use client";
 
-import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 
 interface Album {
   id: string;
@@ -24,11 +23,11 @@ export function AlbumCard({ album }: AlbumCardProps) {
     <Link href={`/albums/${album.id}`} className="group block">
       <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
         {album.cover_photo_url ? (
-          <Image
-            src={album.cover_photo_url}
+          <ProtectedImage
+            photo={{ preview_url: album.cover_photo_url }}
             alt={album.title}
-            fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">

@@ -7,6 +7,8 @@ function toAbsolute(path?: string | null): string {
   return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export function getPreviewUrl(photo: Pick<Photo, "preview_url" | "download_url"> | null | undefined): string {
+export function getPreviewUrl(
+  photo: Partial<Pick<Photo, "preview_url" | "download_url">> | null | undefined
+): string {
   return toAbsolute(photo?.preview_url || photo?.download_url);
 }

@@ -2,22 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import api from "@/lib/api";
-
-interface Photo {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-  category?: string;
-  is_free: boolean;
-  price?: number;
-}
+import type { Photo } from "@/lib/types";
 
 interface FeaturedPhotosProps {
   photos?: Photo[];
@@ -30,13 +21,7 @@ export function FeaturedPhotos({ photos: propPhotos }: FeaturedPhotosProps) {
     if (propPhotos) return;
     api.get("/photos/featured").then(({ data }) => {
       const items = Array.isArray(data) ? data : data.items || [];
-      setPhotos(items.map((p: any) => ({
-        id: p.id,
-        title: p.title || p.alt || "",
-        thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
-        category: p.collectionId || undefined,
-        is_free: true,
-      })));
+      setPhotos(items);
     }).catch(() => {});
   }, [propPhotos]);
   return (
@@ -65,19 +50,18 @@ export function FeaturedPhotos({ photos: propPhotos }: FeaturedPhotosProps) {
             >
               <Link href={`/gallery/${photo.id}`} className="group block">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
-                  <Image
-                    src={photo.thumbnail_url}
+                  <ProtectedImage
+                    photo={photo}
                     alt={photo.title}
-                    fill
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300" />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <Eye className="h-10 w-10 text-white" />
                   </div>
-                  {photo.category && (
+                  {photo.category_id && (
                     <Badge className="absolute top-3 left-3" variant="secondary">
-                      {photo.category}
+                      {photo.category_id}
                     </Badge>
                   )}
                   {!photo.is_free && photo.price && (

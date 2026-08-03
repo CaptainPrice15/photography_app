@@ -41,13 +41,10 @@ export default function PhotosPage() {
   const fetchPhotos = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, string | number | boolean> = { page, limit };
       if (debouncedSearch) params.search = debouncedSearch;
-      if (status === "published") params.is_published = true;
-      if (status === "draft") params.is_published = false;
-      if (status === "featured") params.is_featured = true;
 
-      const { data } = await api.get("/photos/all", { params });
+      const { data } = await api.get("/photos", { params });
       const items = data.items || data;
       setPhotos(Array.isArray(items) ? items : []);
       setTotal(data.total || items.length || 0);
@@ -57,15 +54,24 @@ export default function PhotosPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, debouncedSearch, status]);
+  }, [page, debouncedSearch]);
 
   useEffect(() => {
-    fetchPhotos();
+    const run = async () => {
+      await fetchPhotos();
+    };
+    void run();
   }, [fetchPhotos]);
 
-  useEffect(() => {
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
     setPage(1);
-  }, [debouncedSearch, status]);
+  };
+
+  const handleStatusChange = (value: string) => {
+    setStatus(value);
+    setPage(1);
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this photo?")) return;
@@ -121,13 +127,13 @@ export default function PhotosPage() {
               <Input
                 placeholder="Search photos..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10 w-64"
               />
             </div>
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="border rounded-md px-3 py-2 text-sm w-40"
             >
               <option value="">All Status</option>

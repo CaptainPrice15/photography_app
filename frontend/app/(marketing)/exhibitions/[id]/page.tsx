@@ -3,50 +3,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, Monitor, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import { PhotoGrid, PhotoLightbox } from "@/components/gallery";
+import type { PhotoItem } from "@/components/gallery/PhotoGrid";
 import api from "@/lib/api";
-
-interface Exhibition {
-  id: string;
-  title: string;
-  description: string;
-  long_description?: string;
-  venue?: string;
-  location?: string;
-  start_date: string;
-  end_date?: string;
-  cover_image_url?: string;
-  is_virtual: boolean;
-  exhibition_url?: string;
-}
-
-interface Photo {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-  original_url?: string;
-  category?: string;
-  is_free: boolean;
-  price?: number;
-  view_count?: number;
-}
-
-const MOCK_EXHIBITION: Exhibition = {
-  id: "1",
-  title: "Urban Perspectives",
-  description: "A deep dive into the geometry and soul of modern cities.",
-  long_description: "This exhibition explores the relationship between architecture, light, and human presence in urban environments. From the towering skylines of New York to the intimate alleyways of Tokyo, each photograph reveals a different perspective on city life.",
-  venue: "City Art Gallery",
-  location: "New York, NY",
-  start_date: "2026-08-15",
-  end_date: "2026-09-30",
-  cover_image_url: "/images/placeholder.jpg",
-  is_virtual: false,
-};
+import type { Exhibition, Photo } from "@/lib/types";
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -59,7 +23,7 @@ function formatDate(dateString: string) {
 export default function ExhibitionDetailPage() {
   const params = useParams();
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -68,25 +32,28 @@ export default function ExhibitionDetailPage() {
 
     const load = async () => {
       setIsLoading(true);
-      setExhibition(MOCK_EXHIBITION);
-
       try {
-        const { data } = await api.get("/photos/all");
+        const exhibitionRes = await api.get(`/exhibitions/${params.id}`);
         if (cancelled) return;
-        const items = Array.isArray(data) ? data : data.items || [];
-        const mapped: Photo[] = items.map((p: { id: string; title?: string; alt?: string; src?: string; thumbnail_url?: string; original_url?: string; collectionId?: string }) => ({
-          id: p.id,
-          title: p.title || p.alt || "",
-          thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
-          original_url: p.src || p.original_url || undefined,
-          category: p.collectionId || undefined,
-          is_free: true,
-          price: undefined,
-          view_count: undefined,
-        }));
-        setPhotos(mapped);
+        setExhibition(exhibitionRes.data);
+
+        const photosRes = await api.get("/photos", { params: { limit: 12 } });
+        const items = (photosRes.data?.items ?? []) as Photo[];
+        setPhotos(
+          items.map((p: Photo) => ({
+            id: p.id,
+            title: p.title,
+            preview_url: p.preview_url,
+            download_url: p.download_url,
+            is_free: p.is_free,
+            price: p.price,
+            view_count: p.view_count,
+            location_name: p.location_name,
+            camera_model: p.camera_model,
+          }))
+        );
       } catch {
-        if (!cancelled) setPhotos([]);
+        if (!cancelled) setExhibition(null);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -149,12 +116,13 @@ export default function ExhibitionDetailPage() {
 
         {/* Exhibition hero */}
         <div className="relative aspect-[21/9] overflow-hidden rounded-lg bg-muted">
-          {(exhibition.cover_image_url || photos[0]?.original_url || photos[0]?.thumbnail_url) ? (
-            <Image
-              src={exhibition.cover_image_url || photos[0]?.original_url || photos[0]?.thumbnail_url || ""}
+          {exhibition.cover_image_url ? (
+            <ProtectedImage
+              photo={{ preview_url: exhibition.cover_image_url } as Photo}
               alt={exhibition.title}
-              fill
               className="object-cover"
+              sizes="100vw"
+              priority
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />
@@ -233,9 +201,7 @@ export default function ExhibitionDetailPage() {
                   <dt className="text-muted-foreground">Dates</dt>
                   <dd className="font-medium">
                     {formatDate(exhibition.start_date)} -{" "}
-                    {exhibition.end_date
-                      ? formatDate(exhibition.end_date)
-                      : "Ongoing"}
+                    {exhibition.end_date ? formatDate(exhibition.end_date) : "Ongoing"}
                   </dd>
                 </div>
               </dl>

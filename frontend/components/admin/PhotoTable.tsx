@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "motion/react";
-import { MoreVertical, Eye, Edit, Trash2, Image, Star } from "lucide-react";
+import { MoreVertical, Eye, Edit, Trash2, Image as ImageIcon, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  TableBody,
   TableCell,
   TableRow,
 } from "@/components/ui/table";
@@ -67,14 +67,15 @@ export function PhotoTable({
         >
           <TableCell className="w-20">
             <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden relative">
-                {photo.thumbnail_url ? (
-                <img
-                  src={photo.thumbnail_url}
+                {photo.preview_url || photo.download_url ? (
+                <ProtectedImage
+                  photo={photo}
                   alt={photo.title}
-                  className="w-full h-full object-cover"
+                  className="object-cover"
+                  sizes="64px"
                 />
               ) : (
-                <Image className="h-8 w-8 text-muted-foreground m-auto mt-4" aria-hidden="true" />
+                <ImageIcon className="h-8 w-8 text-muted-foreground m-auto mt-4" aria-hidden="true" />
               )}
               {photo.is_featured && (
                 <Star className="absolute top-1 right-1 h-4 w-4 text-yellow-500 fill-yellow-500" />

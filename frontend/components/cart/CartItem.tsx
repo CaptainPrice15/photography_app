@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Trash2, Image } from "lucide-react";
+import { Trash2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import type { CartItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -26,15 +27,16 @@ export function CartItem({ item, index, onRemove }: CartItemProps) {
         <CardContent className="p-4">
           <div className="flex gap-4">
             <div className="w-20 h-20 bg-muted rounded-lg flex-shrink-0 relative overflow-hidden">
-              {photo.thumbnail_url ? (
-                <img
-                  src={photo.thumbnail_url}
+              {photo.preview_url || photo.download_url ? (
+                <ProtectedImage
+                  photo={photo}
                   alt={photo.title}
-                  className="w-full h-full object-cover"
+                  className="object-cover"
+                  sizes="80px"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Image className="h-8 w-8 text-muted-foreground" />
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
             </div>

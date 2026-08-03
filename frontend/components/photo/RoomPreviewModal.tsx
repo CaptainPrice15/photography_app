@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
-import { X, Frame, Maximize2, Check, Sparkles } from "lucide-react";
+import { X, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 interface RoomPreviewModalProps {
   isOpen: boolean;
@@ -84,7 +83,10 @@ export function RoomPreviewModal({
                       src={photoUrl}
                       alt={photoTitle}
                       fill
-                      className="object-cover"
+                      className="object-cover select-none"
+                      draggable={false}
+                      onContextMenu={(e) => e.preventDefault()}
+                      onDragStart={(e) => e.preventDefault()}
                       sizes="50vw"
                     />
                   </div>

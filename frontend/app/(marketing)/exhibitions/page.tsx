@@ -2,76 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Calendar, MapPin, ArrowRight, Monitor } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-interface Exhibition {
-  id: string;
-  title: string;
-  slug: string;
-  description: string;
-  venue?: string;
-  location?: string;
-  start_date: string;
-  end_date?: string;
-  cover_image_url?: string;
-  is_virtual: boolean;
-  exhibition_url?: string;
-}
-
-const MOCK_EXHIBITIONS: Exhibition[] = [
-  {
-    id: "1",
-    title: "Urban Perspectives",
-    slug: "urban-perspectives",
-    description: "A deep dive into the geometry and soul of modern cities. This exhibition explores how architecture and human activity interact in urban environments.",
-    venue: "City Art Gallery",
-    location: "New York, NY",
-    start_date: "2026-08-15",
-    end_date: "2026-09-30",
-    cover_image_url: "/images/placeholder.jpg",
-    is_virtual: false,
-  },
-  {
-    id: "2",
-    title: "Digital Landscapes",
-    slug: "digital-landscapes",
-    description: "An immersive online exhibition showcasing the world's most stunning natural landscapes, from Arctic glaciers to tropical rainforests.",
-    venue: "Online Exhibition",
-    location: "Virtual",
-    start_date: "2026-07-01",
-    end_date: "2026-12-31",
-    cover_image_url: "/images/placeholder.jpg",
-    is_virtual: true,
-    exhibition_url: "https://example.com/exhibition",
-  },
-  {
-    id: "3",
-    title: "Faces of the World",
-    slug: "faces-of-the-world",
-    description: "A portrait photography exhibition celebrating human diversity and emotion across cultures.",
-    venue: "Metropolitan Museum of Photography",
-    location: "Los Angeles, CA",
-    start_date: "2026-10-05",
-    end_date: "2026-11-20",
-    cover_image_url: "/images/placeholder.jpg",
-    is_virtual: false,
-  },
-  {
-    id: "4",
-    title: "Minimalist Nature",
-    slug: "minimalist-nature",
-    description: "Finding simplicity and elegance in the natural world through careful composition and timing.",
-    venue: "Gallery 360",
-    location: "London, UK",
-    start_date: "2026-09-01",
-    end_date: "2026-10-15",
-    cover_image_url: "/images/placeholder.jpg",
-    is_virtual: true,
-  },
-];
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
+import api from "@/lib/api";
+import type { Exhibition, Photo } from "@/lib/types";
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -86,10 +22,22 @@ export default function ExhibitionsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setExhibitions(MOCK_EXHIBITIONS);
-      setIsLoading(false);
-    }, 500);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await api.get("/exhibitions", { params: { limit: 20 } });
+        if (cancelled) return;
+        setExhibitions(Array.isArray(data) ? data : data?.items ?? []);
+      } catch {
+        if (!cancelled) setExhibitions([]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -124,11 +72,11 @@ export default function ExhibitionsPage() {
                 <Link href={`/exhibitions/${exhibition.id}`} className="group block">
                   <div className="relative aspect-[16/9] overflow-hidden rounded-lg bg-muted">
                     {exhibition.cover_image_url ? (
-                      <Image
-                        src={exhibition.cover_image_url}
+                      <ProtectedImage
+                        photo={{ preview_url: exhibition.cover_image_url } as Photo}
                         alt={exhibition.title}
-                        fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                       />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />
@@ -174,6 +122,12 @@ export default function ExhibitionsPage() {
                 </Link>
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {!isLoading && exhibitions.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            No exhibitions are currently available.
           </div>
         )}
       </motion.div>

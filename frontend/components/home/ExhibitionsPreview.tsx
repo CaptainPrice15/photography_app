@@ -1,48 +1,17 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Calendar, MapPin, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-interface Exhibition {
-  id: string;
-  title: string;
-  venue?: string;
-  location?: string;
-  start_date: string;
-  end_date?: string;
-  cover_image_url?: string;
-  is_virtual: boolean;
-}
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
+import api from "@/lib/api";
+import type { Exhibition, Photo } from "@/lib/types";
 
 interface ExhibitionsPreviewProps {
   exhibitions?: Exhibition[];
 }
-
-const MOCK_EXHIBITIONS: Exhibition[] = [
-  {
-    id: "1",
-    title: "Urban Perspectives",
-    venue: "City Art Gallery",
-    location: "New York, NY",
-    start_date: "2026-08-15",
-    end_date: "2026-09-30",
-    cover_image_url: "/images/placeholder.jpg",
-    is_virtual: false,
-  },
-  {
-    id: "2",
-    title: "Digital Landscapes",
-    venue: "Online Exhibition",
-    location: "Virtual",
-    start_date: "2026-07-01",
-    end_date: "2026-12-31",
-    cover_image_url: "/images/placeholder.jpg",
-    is_virtual: true,
-  },
-];
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -52,7 +21,25 @@ function formatDate(dateString: string) {
   });
 }
 
-export function ExhibitionsPreview({ exhibitions = MOCK_EXHIBITIONS }: ExhibitionsPreviewProps) {
+export function ExhibitionsPreview({ exhibitions: propExhibitions }: ExhibitionsPreviewProps) {
+  const [exhibitions, setExhibitions] = useState<Exhibition[]>(propExhibitions || []);
+
+  useEffect(() => {
+    if (propExhibitions) return;
+    let cancelled = false;
+    api.get("/exhibitions", { params: { limit: 2 } })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setExhibitions(Array.isArray(data) ? data : data?.items ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [propExhibitions]);
+
+  if (exhibitions.length === 0) return null;
+
   return (
     <section className="py-20 px-4">
       <div className="container mx-auto">
@@ -86,11 +73,11 @@ export function ExhibitionsPreview({ exhibitions = MOCK_EXHIBITIONS }: Exhibitio
               <Link href={`/exhibitions/${exhibition.id}`} className="group block">
                 <div className="relative aspect-[16/7] overflow-hidden rounded-lg bg-muted">
                   {exhibition.cover_image_url ? (
-                    <Image
-                      src={exhibition.cover_image_url}
+                    <ProtectedImage
+                      photo={{ preview_url: exhibition.cover_image_url } as Photo}
                       alt={exhibition.title}
-                      fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />

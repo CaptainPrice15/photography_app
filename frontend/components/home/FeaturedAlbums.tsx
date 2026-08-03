@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, ArrowRight, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import { useAlbums } from "@/hooks/useAlbums";
 
 export function FeaturedAlbums() {
@@ -56,11 +56,11 @@ export function FeaturedAlbums() {
                 <Link href={`/albums/${album.id}`} className="group block">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-card border border-border/60 shadow-lg group-hover:shadow-2xl transition-all duration-500 glass-panel">
                     {album.cover_photo_url ? (
-                      <Image
-                        src={album.cover_photo_url}
+                      <ProtectedImage
+                        photo={{ preview_url: album.cover_photo_url }}
                         alt={album.title}
-                        fill
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 33vw"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">

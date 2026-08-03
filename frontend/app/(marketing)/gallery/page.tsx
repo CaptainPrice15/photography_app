@@ -4,75 +4,66 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { PhotoGrid, PhotoFilters, PhotoLightbox } from "@/components/gallery";
+import type { PhotoItem } from "@/components/gallery/PhotoGrid";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useAuth } from "@/hooks/useAuth";
+import { useCartStore } from "@/store/cartStore";
+import { usePhotos } from "@/hooks/usePhotos";
 import api from "@/lib/api";
-
-interface Photo {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-  original_url?: string;
-  category?: string;
-  is_free: boolean;
-  price?: number;
-  view_count?: number;
-}
+import { toast } from "sonner";
+import type { Photo } from "@/lib/types";
 
 export default function GalleryPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [photos, setPhotos] = useState<Photo[]>([]);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "all");
   const [sort, setSort] = useState(searchParams.get("sort") || "newest");
-  const [isLoading, setIsLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
 
   const debouncedSearch = useDebounce(search, 500);
+  const { isAuthenticated } = useAuth();
+  const addItem = useCartStore((s) => s.addItem);
+
+  const { data, isLoading } = usePhotos({
+    page: 1,
+    limit: 60,
+    search: debouncedSearch || undefined,
+    category: category !== "all" ? category : undefined,
+    sort,
+  });
+
+  const photos: PhotoItem[] = (data?.items || []).map((p: Photo) => ({
+    id: p.id,
+    title: p.title,
+    preview_url: p.preview_url,
+    download_url: p.download_url,
+    width: p.width,
+    height: p.height,
+    location_name: p.location_name,
+    camera_model: p.camera_model,
+    category_id: p.category_id,
+    is_free: p.is_free,
+    price: p.price,
+    view_count: p.view_count,
+  }));
 
   useEffect(() => {
-    const fetchPhotos = async () => {
-      setIsLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (debouncedSearch) params.set("search", debouncedSearch);
-        if (category && category !== "all") params.set("category", category);
-
-        const { data } = await api.get(`/photos/all?${params.toString()}`);
-        const items = Array.isArray(data) ? data : data.items || [];
-
-        const mapped: Photo[] = items.map((p: any) => ({
-          id: p.id,
-          title: p.title || p.alt || "",
-          thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
-          original_url: p.src || p.original_url || undefined,
-          category: p.collectionId || undefined,
-          is_free: true,
-          price: undefined,
-          view_count: undefined,
-        }));
-
-        let filtered = mapped;
-
-        if (sort === "popular") {
-          filtered.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
-        } else if (sort === "price_asc") {
-          filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
-        } else if (sort === "price_desc") {
-          filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
-        }
-
-        setPhotos(filtered);
-      } catch {
-        setPhotos([]);
-      } finally {
-        setIsLoading(false);
+    api.get("/categories").then(({ data }) => {
+      const items = Array.isArray(data) ? data : [];
+      if (items.length > 0) {
+        setCategories([
+          { value: "all", label: "All Categories" },
+          ...items.map((c: { id: string; name: string }) => ({
+            value: c.id,
+            label: c.name,
+          })),
+        ]);
       }
-    };
-
-    fetchPhotos();
-  }, [debouncedSearch, category, sort]);
+    }).catch(() => {});
+  }, []);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -103,14 +94,23 @@ export default function GalleryPage() {
     router.push(`/gallery?${params.toString()}`);
   };
 
-  const handleFavourite = (photoId: string) => {
-    console.log("Favourite:", photoId);
-    // TODO: Implement favourite API call
+  const handleFavourite = async (photoId: string) => {
+    if (!isAuthenticated) {
+      toast.error("Please login to save favourites");
+      router.push("/login");
+      return;
+    }
+    try {
+      await api.post("/favourites/toggle", { photo_id: photoId });
+    } catch {
+      toast.error("Failed to update favourites");
+    }
   };
 
   const handleAddToCart = (photoId: string) => {
-    console.log("Add to cart:", photoId);
-    // TODO: Implement add to cart API call
+    const item = (data?.items || []).find((p: Photo) => p.id === photoId);
+    if (item) addItem(item);
+    toast.success("Added to cart");
   };
 
   return (
@@ -133,6 +133,7 @@ export default function GalleryPage() {
           search={search}
           category={category}
           sort={sort}
+          categories={categories}
           onSearchChange={handleSearchChange}
           onCategoryChange={handleCategoryChange}
           onSortChange={handleSortChange}

@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Folder, ArrowRight } from "lucide-react";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import api from "@/lib/api";
 
 interface Collection {
@@ -23,13 +23,13 @@ export function PopularCollections({ collections: propCollections }: PopularColl
 
   useEffect(() => {
     if (propCollections) return;
-    api.get("/photos/collections").then(({ data }) => {
+    api.get("/albums", { params: { limit: 8 } }).then(({ data }) => {
       const items = Array.isArray(data) ? data : data.items || [];
-      setCollections(items.map((c: any) => ({
-        id: c.id || c.slug,
-        name: c.title || c.name || c.slug,
-        photo_count: c.photos?.length || 0,
-        cover_url: c.cover || c.cover_url || "/images/placeholder.jpg",
+      setCollections(items.map((c: { id: string; title?: string; name?: string; slug?: string; photo_count?: number; cover_photo_url?: string }) => ({
+        id: c.id,
+        name: c.title || c.name || c.slug || "Untitled",
+        photo_count: c.photo_count || 0,
+        cover_url: c.cover_photo_url,
       })));
     }).catch(() => {});
   }, [propCollections]);
@@ -60,11 +60,11 @@ export function PopularCollections({ collections: propCollections }: PopularColl
               <Link href={`/albums/${collection.id}`} className="group block">
                 <div className="relative aspect-[3/2] overflow-hidden rounded-lg bg-muted">
                   {collection.cover_url ? (
-                    <Image
-                      src={collection.cover_url}
+                    <ProtectedImage
+                      photo={{ preview_url: collection.cover_url }}
                       alt={collection.name}
-                      fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, 25vw"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">

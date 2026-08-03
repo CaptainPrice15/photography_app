@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Navigation, Eye, Heart, Camera, Compass } from "lucide-react";
+import { MapPin, Navigation, Eye, Camera, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import { PhotoLightbox } from "@/components/gallery/PhotoLightbox";
+import api from "@/lib/api";
+import type { Photo } from "@/lib/types";
 
 export interface GeoPhoto {
   id: string;
   title: string;
-  thumbnail_url: string;
-  original_url: string;
+  preview_url?: string;
+  download_url?: string;
   location_name: string;
   lat: number;
   lng: number;
@@ -21,68 +23,53 @@ export interface GeoPhoto {
   lens?: string;
 }
 
-// Sample world-class geo-tagged photo mock points
-const MOCK_MAP_PHOTOS: GeoPhoto[] = [
-  {
-    id: "geo-1",
-    title: "Golden Gate Dawn",
-    thumbnail_url: "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=800&auto=format&fit=crop",
-    original_url: "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=1600&auto=format&fit=crop",
-    location_name: "San Francisco, USA",
-    lat: 37.8199,
-    lng: -122.4783,
-    camera_model: "Sony A7IV",
-    lens: "FE 24-70mm f/2.8 GM II",
-  },
-  {
-    id: "geo-2",
-    title: "Alpine Mist Reflections",
-    thumbnail_url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop",
-    original_url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1600&auto=format&fit=crop",
-    location_name: "Swiss Alps, Switzerland",
-    lat: 46.56,
-    lng: 8.56,
-    camera_model: "Canon EOS R5",
-    lens: "RF 15-35mm f/2.8L",
-  },
-  {
-    id: "geo-3",
-    title: "Tokyo Cyber Neon",
-    thumbnail_url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&auto=format&fit=crop",
-    original_url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=1600&auto=format&fit=crop",
-    location_name: "Shinjuku, Tokyo, Japan",
-    lat: 35.6938,
-    lng: 139.7034,
-    camera_model: "Fujifilm X-T5",
-    lens: "XF 35mm f/1.4 R",
-  },
-  {
-    id: "geo-4",
-    title: "Sahara Dunes at Sunset",
-    thumbnail_url: "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=800&auto=format&fit=crop",
-    original_url: "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=1600&auto=format&fit=crop",
-    location_name: "Merzouga, Morocco",
-    lat: 31.099,
-    lng: -4.01,
-    camera_model: "Nikon Z8",
-    lens: "NIKKOR Z 70-200mm f/2.8 S",
-  },
-  {
-    id: "geo-5",
-    title: "Reykjavik Northern Lights",
-    thumbnail_url: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=800&auto=format&fit=crop",
-    original_url: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1600&auto=format&fit=crop",
-    location_name: "Thingvellir, Iceland",
-    lat: 64.2559,
-    lng: -21.1297,
-    camera_model: "Sony A1",
-    lens: "FE 14mm f/1.8 GM",
-  },
-];
-
 export function PhotoMap() {
-  const [selectedPhoto, setSelectedPhoto] = useState<GeoPhoto | null>(MOCK_MAP_PHOTOS[0]);
+  const [geoPhotos, setGeoPhotos] = useState<GeoPhoto[]>([]);
+  const [selectedPhoto, setSelectedPhoto] = useState<GeoPhoto | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await api.get("/photos", { params: { limit: 100, sort: "newest" } });
+        if (cancelled) return;
+        const items: Photo[] = data?.items ?? [];
+        const located = items
+          .filter((p) => typeof p.latitude === "number" && typeof p.longitude === "number")
+          .map((p) => ({
+            id: p.id,
+            title: p.title,
+            preview_url: p.preview_url,
+            download_url: p.download_url,
+            location_name: p.location_name || "Unknown Location",
+            lat: p.latitude as number,
+            lng: p.longitude as number,
+            camera_model: p.camera_model,
+            lens: p.lens,
+          }));
+        setGeoPhotos(located);
+        if (located.length > 0) setSelectedPhoto(located[0]);
+      } catch {
+        setGeoPhotos([]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center bg-zinc-950 text-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-[calc(100vh-4rem)] bg-zinc-950 overflow-hidden flex flex-col md:flex-row">
@@ -104,32 +91,47 @@ export function PhotoMap() {
               </div>
             </div>
             <Badge className="bg-amber-500 text-black font-bold">
-              {MOCK_MAP_PHOTOS.length} Pinned Shoots
+              {geoPhotos.length} Pinned Shoots
             </Badge>
           </div>
 
           {/* Map Pin Nodes */}
-          <div className="relative flex-1 my-6 flex items-center justify-around flex-wrap gap-6 z-10">
-            {MOCK_MAP_PHOTOS.map((photo, index) => {
-              const isSelected = selectedPhoto?.id === photo.id;
-              return (
-                <motion.button
-                  key={photo.id}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedPhoto(photo)}
-                  className={`relative flex items-center gap-2 p-2 rounded-2xl border transition-all duration-300 ${
-                    isSelected
-                      ? "bg-amber-500 text-black border-amber-400 font-bold shadow-[0_0_20px_rgba(212,175,55,0.4)]"
-                      : "bg-white/10 text-white border-white/20 hover:bg-white/20 backdrop-blur-md"
-                  }`}
-                >
-                  <MapPin className={`h-4 w-4 ${isSelected ? "text-black" : "text-amber-400"}`} />
-                  <span className="text-xs">{photo.location_name.split(",")[0]}</span>
-                </motion.button>
-              );
-            })}
-          </div>
+          {geoPhotos.length > 0 ? (
+            <div className="relative flex-1 my-6 flex items-center justify-around flex-wrap gap-6 z-10">
+              {geoPhotos.map((photo) => {
+                const isSelected = selectedPhoto?.id === photo.id;
+                return (
+                  <motion.button
+                    key={photo.id}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedPhoto(photo)}
+                    className={`relative flex items-center gap-2 p-2 rounded-2xl border transition-all duration-300 ${
+                      isSelected
+                        ? "bg-amber-500 text-black border-amber-400 font-bold shadow-[0_0_20px_rgba(212,175,55,0.4)]"
+                        : "bg-white/10 text-white border-white/20 hover:bg-white/20 backdrop-blur-md"
+                    }`}
+                  >
+                    <MapPin className={`h-4 w-4 ${isSelected ? "text-black" : "text-amber-400"}`} />
+                    <span className="text-xs">{photo.location_name.split(",")[0]}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 z-10 text-center">
+              <MapPin className="h-10 w-10 text-amber-500/40" />
+              <p className="text-sm text-muted-foreground max-w-sm">
+                No geo-tagged photographs available yet. Photos with location coordinates will appear here.
+              </p>
+              <Link
+                href="/gallery"
+                className="inline-flex items-center gap-1 text-sm text-amber-400 hover:underline"
+              >
+                Browse the gallery →
+              </Link>
+            </div>
+          )}
 
           {/* Map Compass Rose Background Accent */}
           <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
@@ -151,11 +153,11 @@ export function PhotoMap() {
           >
             <div>
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-border/60 shadow-xl mb-4 group">
-                <Image
-                  src={selectedPhoto.thumbnail_url}
+                <ProtectedImage
+                  photo={{ preview_url: selectedPhoto.preview_url, download_url: selectedPhoto.download_url }}
                   alt={selectedPhoto.title}
-                  fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, 384px"
                 />
                 <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
 
@@ -163,7 +165,7 @@ export function PhotoMap() {
                   size="icon"
                   className="absolute bottom-3 right-3 rounded-full bg-amber-500 text-black hover:bg-amber-400 shadow-lg"
                   onClick={() => {
-                    const idx = MOCK_MAP_PHOTOS.findIndex((p) => p.id === selectedPhoto.id);
+                    const idx = geoPhotos.findIndex((p) => p.id === selectedPhoto.id);
                     setLightboxIndex(idx >= 0 ? idx : 0);
                   }}
                 >
@@ -176,7 +178,7 @@ export function PhotoMap() {
                   {selectedPhoto.location_name}
                 </Badge>
                 <h3 className="font-heading font-bold text-2xl">{selectedPhoto.title}</h3>
-                
+
                 {selectedPhoto.camera_model && (
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/40 text-xs space-y-1">
                     <p className="flex items-center gap-1.5 text-muted-foreground">
@@ -191,16 +193,23 @@ export function PhotoMap() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border/60">
+            <div className="pt-4 border-t border-border/60 space-y-2">
               <Button
                 onClick={() => {
-                  const idx = MOCK_MAP_PHOTOS.findIndex((p) => p.id === selectedPhoto.id);
+                  const idx = geoPhotos.findIndex((p) => p.id === selectedPhoto.id);
                   setLightboxIndex(idx >= 0 ? idx : 0);
                 }}
                 className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-md shadow-amber-500/20"
               >
+                <Eye className="h-4 w-4 mr-2" />
                 View Full Screen Shoot
               </Button>
+              <Link
+                href={`/gallery/${selectedPhoto.id}`}
+                className="block text-center text-sm text-muted-foreground hover:text-amber-500"
+              >
+                Open photo detail page →
+              </Link>
             </div>
           </motion.div>
         )}
@@ -209,12 +218,16 @@ export function PhotoMap() {
       {/* Lightbox for Map photos */}
       {lightboxIndex !== null && (
         <PhotoLightbox
-          photos={MOCK_MAP_PHOTOS}
+          photos={geoPhotos}
           currentIndex={lightboxIndex}
           isOpen={lightboxIndex !== null}
           onClose={() => setLightboxIndex(null)}
-          onNext={() => setLightboxIndex((prev) => (prev !== null && prev < MOCK_MAP_PHOTOS.length - 1 ? prev + 1 : prev))}
-          onPrevious={() => setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))}
+          onNext={() =>
+            setLightboxIndex((prev) => (prev !== null && prev < geoPhotos.length - 1 ? prev + 1 : prev))
+          }
+          onPrevious={() =>
+            setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))
+          }
         />
       )}
     </div>

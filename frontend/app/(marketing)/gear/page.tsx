@@ -1,69 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "motion/react";
-import { Camera, Aperture, Sliders, Layers } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { PhotoGrid } from "@/components/gallery/PhotoGrid";
 import { PhotoLightbox } from "@/components/gallery/PhotoLightbox";
-
-const GEAR_BRANDS = ["All", "Sony", "Canon", "Nikon", "Fujifilm", "Leica"];
-
-const MOCK_GEAR_PHOTOS = [
-  {
-    id: "gear-1",
-    title: "Urban Architecture Reflection",
-    thumbnail_url: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop",
-    original_url: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1600&auto=format&fit=crop",
-    category: "Architecture",
-    is_free: false,
-    price: 35,
-    camera_make: "Sony",
-    camera_model: "A7IV",
-    lens: "FE 24-70mm f/2.8 GM II",
-    aperture: "2.8",
-    shutter_speed: "1/500",
-    iso: 100,
-  },
-  {
-    id: "gear-2",
-    title: "Mist Over Redwood Forest",
-    thumbnail_url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&auto=format&fit=crop",
-    original_url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1600&auto=format&fit=crop",
-    category: "Landscape",
-    is_free: true,
-    camera_make: "Canon",
-    camera_model: "EOS R5",
-    lens: "RF 70-200mm f/2.8L IS",
-    aperture: "4.0",
-    shutter_speed: "1/250",
-    iso: 200,
-  },
-  {
-    id: "gear-3",
-    title: "Street Portrait Silhouette",
-    thumbnail_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop",
-    original_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&auto=format&fit=crop",
-    category: "Portrait",
-    is_free: false,
-    price: 45,
-    camera_make: "Leica",
-    camera_model: "M11",
-    lens: "Summilux-M 35mm f/1.4 ASPH",
-    aperture: "1.4",
-    shutter_speed: "1/1000",
-    iso: 64,
-  },
-];
+import type { PhotoItem } from "@/components/gallery/PhotoGrid";
+import api from "@/lib/api";
+import type { Photo } from "@/lib/types";
 
 export default function GearPage() {
   const [selectedBrand, setSelectedBrand] = useState("All");
+  const [brands, setBrands] = useState<string[]>(["All"]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const filteredPhotos = selectedBrand === "All"
-    ? MOCK_GEAR_PHOTOS
-    : MOCK_GEAR_PHOTOS.filter((p) => p.camera_make === selectedBrand);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await api.get("/photos", { params: { limit: 100 } });
+        if (cancelled) return;
+        const items: Photo[] = data?.items ?? [];
+        const mapped: PhotoItem[] = items.map((p: Photo) => ({
+          id: p.id,
+          title: p.title,
+          preview_url: p.preview_url,
+          download_url: p.download_url,
+          is_free: p.is_free,
+          price: p.price,
+          view_count: p.view_count,
+          camera_make: p.camera_make,
+          camera_model: p.camera_model,
+          lens: p.lens,
+          aperture: p.aperture,
+          shutter_speed: p.shutter_speed,
+          iso: p.iso,
+        }));
+        setPhotos(mapped);
+        const found = Array.from(
+          new Set(items.map((p) => p.camera_make).filter((m): m is string => !!m))
+        );
+        if (found.length > 0) setBrands(["All", ...found]);
+      } catch {
+        setPhotos([]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredPhotos =
+    selectedBrand === "All"
+      ? photos
+      : photos.filter((p) => p.camera_make === selectedBrand);
 
   return (
     <div className="container mx-auto px-4 py-12 space-y-8">
@@ -83,7 +78,7 @@ export default function GearPage() {
 
       {/* Brand Filter Buttons */}
       <div className="flex items-center justify-center gap-2 flex-wrap">
-        {GEAR_BRANDS.map((brand) => (
+        {brands.map((brand) => (
           <Button
             key={brand}
             variant={selectedBrand === brand ? "default" : "outline"}
@@ -99,14 +94,34 @@ export default function GearPage() {
         ))}
       </div>
 
-      {/* Photo Grid */}
-      <PhotoGrid
-        photos={filteredPhotos}
-        onOpenLightbox={(photo) => {
-          const idx = filteredPhotos.findIndex((p) => p.id === photo.id);
-          setLightboxIndex(idx >= 0 ? idx : 0);
-        }}
-      />
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="aspect-[4/3] bg-muted/40 rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground text-center">
+            {filteredPhotos.length} photograph{filteredPhotos.length !== 1 ? "s" : ""} with
+            camera metadata
+          </p>
+
+          <PhotoGrid
+            photos={filteredPhotos}
+            onOpenLightbox={(photo) => {
+              const idx = filteredPhotos.findIndex((p) => p.id === photo.id);
+              setLightboxIndex(idx >= 0 ? idx : 0);
+            }}
+          />
+
+          {filteredPhotos.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              No photographs with camera metadata found.
+            </div>
+          )}
+        </>
+      )}
 
       {/* Lightbox */}
       {lightboxIndex !== null && (
@@ -115,8 +130,14 @@ export default function GearPage() {
           currentIndex={lightboxIndex}
           isOpen={lightboxIndex !== null}
           onClose={() => setLightboxIndex(null)}
-          onNext={() => setLightboxIndex((prev) => (prev !== null && prev < filteredPhotos.length - 1 ? prev + 1 : prev))}
-          onPrevious={() => setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))}
+          onNext={() =>
+            setLightboxIndex((prev) =>
+              prev !== null && prev < filteredPhotos.length - 1 ? prev + 1 : prev
+            )
+          }
+          onPrevious={() =>
+            setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))
+          }
         />
       )}
     </div>

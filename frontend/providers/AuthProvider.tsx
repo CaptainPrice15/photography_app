@@ -24,9 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem("access_token");
       if (token) {
         try {
-          const { data } = await api.get("/auth/session");
-          if (data.session?.user) {
-            setUser(data.session.user);
+          const { data } = await api.get("/auth/me");
+          if (data) {
+            setUser(data);
           } else {
             storeLogout();
           }
@@ -50,7 +50,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       username,
       password,
-      confirm: password,
       full_name: fullName,
     });
     storeLogin(data.user, data.access_token, data.refresh_token);

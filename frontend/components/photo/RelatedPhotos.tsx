@@ -1,15 +1,10 @@
 "use client";
 
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Eye } from "lucide-react";
-
-interface Photo {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-}
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
+import type { Photo } from "@/lib/types";
 
 interface RelatedPhotosProps {
   photos: Photo[];
@@ -33,11 +28,11 @@ export function RelatedPhotos({ photos }: RelatedPhotosProps) {
           >
             <Link href={`/gallery/${photo.id}`} className="group block">
               <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-                <Image
-                  src={photo.thumbnail_url}
+                <ProtectedImage
+                  photo={photo}
                   alt={photo.title}
-                  fill
                   className="object-cover transition-transform duration-300 group-hover:scale-110"
+                  sizes="300px"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300" />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">

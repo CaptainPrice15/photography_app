@@ -113,9 +113,14 @@ export function PhotoLightbox({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
+      const blockContextMenu = (e: MouseEvent) => e.preventDefault();
+      document.addEventListener("contextmenu", blockContextMenu);
+      return () => {
+        document.body.style.overflow = "unset";
+        document.removeEventListener("contextmenu", blockContextMenu);
+      };
     }
+    document.body.style.overflow = "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
@@ -217,41 +222,31 @@ export function PhotoLightbox({
 
             {/* Main Canvas Viewport */}
             <div className="flex-1 flex items-center justify-center p-8 w-full h-full max-w-7xl">
-              {showCompare && currentPhoto.thumbnail_url ? (
-                <div className="w-full max-w-4xl">
-                  <BeforeAfterSlider
-                    beforeImage={currentPhoto.thumbnail_url}
-                    afterImage={currentUrl}
-                    beforeLabel="RAW Original"
-                    afterLabel="Final Color Grade"
-                    alt={currentPhoto.title}
-                  />
-                </div>
-              ) : (
-                <AnimatePresence initial={false} custom={slideDirection}>
-                  <motion.div
-                    key={currentPhoto.id}
-                    custom={slideDirection}
-                    variants={slideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="absolute inset-0 flex items-center justify-center"
-                  >
-                    <div className="relative max-w-[85vw] max-h-[85vh] w-full h-full">
-                      <Image
-                        src={currentUrl}
-                        alt={currentPhoto.title}
-                        fill
-                        className="object-contain"
-                        sizes="90vw"
-                        priority
-                      />
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              )}
+              <AnimatePresence initial={false} custom={slideDirection}>
+                <motion.div
+                  key={currentPhoto.id}
+                  custom={slideDirection}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <div className="relative max-w-[85vw] max-h-[85vh] w-full h-full">
+                    <Image
+                      src={currentUrl}
+                      alt={currentPhoto.title}
+                      fill
+                      className="object-contain select-none"
+                      draggable={false}
+                      onDragStart={(e) => e.preventDefault()}
+                      sizes="90vw"
+                      priority
+                    />
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* EXIF Data Drawer */}

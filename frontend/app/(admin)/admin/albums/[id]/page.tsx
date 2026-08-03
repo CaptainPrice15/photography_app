@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import api from "@/lib/api";
 import type { Album, Photo } from "@/lib/types";
 
@@ -28,7 +29,7 @@ export default function EditAlbumPage() {
   const [isPublished, setIsPublished] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
   const [coverPhotoId, setCoverPhotoId] = useState("");
-  const [albumPhotos] = useState<Photo[]>([]);
+  const [albumPhotos, setAlbumPhotos] = useState<Photo[]>([]);
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -41,7 +42,9 @@ export default function EditAlbumPage() {
         setIsPublished(data.is_published);
         setIsFeatured(data.is_featured);
         setCoverPhotoId(data.cover_photo_id || "");
-    } catch (err: unknown) {
+        const photosRes = await api.get(`/albums/${albumId}/photos`);
+        setAlbumPhotos(photosRes.data ?? []);
+    } catch {
       toast.error("Failed to load album");
         router.push("/admin/albums");
       } finally {
@@ -175,10 +178,11 @@ export default function EditAlbumPage() {
                       key={photo.id}
                       className="aspect-square rounded-lg overflow-hidden bg-muted border relative group"
                     >
-                      <img
-                        src={photo.thumbnail_url || photo.original_url}
+                      <ProtectedImage
+                        photo={photo}
                         alt={photo.title}
-                        className="w-full h-full object-cover"
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, 25vw"
                       />
                       {photo.id === coverPhotoId && (
                         <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs text-center py-1">

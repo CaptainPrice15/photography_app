@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List, Union
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class AlbumCreate(BaseModel):
@@ -30,6 +30,7 @@ class AlbumResponse(BaseModel):
     slug: str
     description: Optional[str] = None
     cover_photo_id: Optional[Union[UUID, str]] = None
+    cover_photo_url: Optional[str] = None
     is_published: bool
     is_featured: bool
     sort_order: int
@@ -38,6 +39,12 @@ class AlbumResponse(BaseModel):
     updated_at: Union[datetime, str]
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def build_cover_url(self) -> "AlbumResponse":
+        if self.cover_photo_id:
+            self.cover_photo_url = f"/api/v1/photos/{self.cover_photo_id}/preview"
+        return self
 
 
 class AlbumListResponse(BaseModel):

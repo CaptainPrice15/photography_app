@@ -2,18 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Clock, ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import api from "@/lib/api";
-
-interface Photo {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-  created_at: string;
-}
+import type { Photo } from "@/lib/types";
 
 interface LatestUploadsProps {
   photos?: Photo[];
@@ -26,12 +19,7 @@ export function LatestUploads({ photos: propPhotos }: LatestUploadsProps) {
     if (propPhotos) return;
     api.get("/photos/latest").then(({ data }) => {
       const items = Array.isArray(data) ? data : data.items || [];
-      setPhotos(items.slice(0, 4).map((p: any) => ({
-        id: p.id,
-        title: p.title || p.alt || "",
-        thumbnail_url: p.src || p.thumbnail_url || "/images/placeholder.jpg",
-        created_at: p.created_at || new Date().toISOString(),
-      })));
+      setPhotos(items.slice(0, 4));
     }).catch(() => {});
   }, [propPhotos]);
   return (
@@ -69,10 +57,9 @@ export function LatestUploads({ photos: propPhotos }: LatestUploadsProps) {
             >
               <Link href={`/gallery/${photo.id}`} className="group block">
                 <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-                  <Image
-                    src={photo.thumbnail_url}
+                  <ProtectedImage
+                    photo={photo}
                     alt={photo.title}
-                    fill
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

@@ -44,7 +44,7 @@ export function usePhotos(options: UsePhotosOptions = {}) {
           limit: data.limit ?? limit,
           pages: data.pages ?? 1,
         });
-      } catch (err) {
+      } catch {
         setError("Failed to fetch photos");
       } finally {
         setIsLoading(false);
