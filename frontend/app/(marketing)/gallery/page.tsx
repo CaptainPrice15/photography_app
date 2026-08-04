@@ -11,7 +11,6 @@ import { useCartStore } from "@/store/cartStore";
 import { usePhotos } from "@/hooks/usePhotos";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import type { Photo } from "@/lib/types";
 
 export default function GalleryPage() {
   const searchParams = useSearchParams();
@@ -35,35 +34,20 @@ export default function GalleryPage() {
     sort,
   });
 
-  const photos: PhotoItem[] = (data?.items || []).map((p: Photo) => ({
-    id: p.id,
-    title: p.title,
-    preview_url: p.preview_url,
-    download_url: p.download_url,
-    width: p.width,
-    height: p.height,
-    location_name: p.location_name,
-    camera_model: p.camera_model,
-    category_id: p.category_id,
-    is_free: p.is_free,
-    price: p.price,
-    view_count: p.view_count,
-  }));
+  const photos: PhotoItem[] = data?.items || [];
 
   useEffect(() => {
-    api.get("/categories").then(({ data }) => {
-      const items = Array.isArray(data) ? data : [];
-      if (items.length > 0) {
-        setCategories([
-          { value: "all", label: "All Categories" },
-          ...items.map((c: { id: string; name: string }) => ({
-            value: c.id,
-            label: c.name,
-          })),
-        ]);
-      }
-    }).catch(() => {});
-  }, []);
+    const collectionIds = new Set(photos.map((p) => p.category_id).filter(Boolean));
+    if (collectionIds.size > 0) {
+      setCategories([
+        { value: "all", label: "All Categories" },
+        ...Array.from(collectionIds).map((id) => ({
+          value: id!,
+          label: id!,
+        })),
+      ]);
+    }
+  }, [photos]);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -101,15 +85,15 @@ export default function GalleryPage() {
       return;
     }
     try {
-      await api.post("/favourites/toggle", { photo_id: photoId });
+      await api.post("/favorites/toggle", { photo_id: photoId });
     } catch {
       toast.error("Failed to update favourites");
     }
   };
 
   const handleAddToCart = (photoId: string) => {
-    const item = (data?.items || []).find((p: Photo) => p.id === photoId);
-    if (item) addItem(item);
+    const item = photos.find((p) => p.id === photoId);
+    if (item) addItem(item as never);
     toast.success("Added to cart");
   };
 

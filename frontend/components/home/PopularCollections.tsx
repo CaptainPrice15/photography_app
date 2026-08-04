@@ -7,6 +7,17 @@ import { Folder, ArrowRight } from "lucide-react";
 import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import api from "@/lib/api";
 
+interface RenderCollection {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  cover: string | null;
+  accent: string | null;
+  accentSoft: string | null;
+  photos: unknown[];
+}
+
 interface Collection {
   id: string;
   name: string;
@@ -23,13 +34,14 @@ export function PopularCollections({ collections: propCollections }: PopularColl
 
   useEffect(() => {
     if (propCollections) return;
-    api.get("/albums", { params: { limit: 8 } }).then(({ data }) => {
-      const items = Array.isArray(data) ? data : data.items || [];
-      setCollections(items.map((c: { id: string; title?: string; name?: string; slug?: string; photo_count?: number; cover_photo_url?: string }) => ({
+    api.get("/photos/collections").then(({ data }) => {
+      const items = Array.isArray(data) ? data : [];
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      setCollections(items.map((c: RenderCollection) => ({
         id: c.id,
-        name: c.title || c.name || c.slug || "Untitled",
-        photo_count: c.photo_count || 0,
-        cover_url: c.cover_photo_url,
+        name: c.title || c.slug,
+        photo_count: c.photos?.length || 0,
+        cover_url: c.cover ? `${API_URL}${c.cover}` : undefined,
       })));
     }).catch(() => {});
   }, [propCollections]);

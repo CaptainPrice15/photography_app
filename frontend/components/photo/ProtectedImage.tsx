@@ -3,10 +3,9 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { getPreviewUrl } from "@/lib/imageUrl";
-import type { Photo } from "@/lib/types";
 
 interface ProtectedImageProps {
-  photo: Photo | { preview_url?: string; download_url?: string } | null;
+  photo: { preview_url?: string; download_url?: string; src?: string } | null;
   alt: string;
   fill?: boolean;
   sizes?: string;

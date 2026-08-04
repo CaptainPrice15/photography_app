@@ -2,16 +2,24 @@
 
 import { motion } from "motion/react";
 import { PhotoCard } from "./PhotoCard";
-import type { Photo } from "@/lib/types";
 
-export type PhotoItem = Partial<Photo> & {
+export interface PhotoItem {
   id: string;
   title: string;
   preview_url?: string;
   download_url?: string;
+  src?: string;
+  width?: number;
+  height?: number;
+  location_name?: string;
+  camera_make?: string;
+  camera_model?: string;
+  category_id?: string;
   is_free?: boolean;
   price?: number;
-};
+  view_count?: number;
+  is_featured?: boolean;
+}
 
 interface PhotoGridProps {
   photos: PhotoItem[];

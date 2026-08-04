@@ -6,19 +6,24 @@ import Link from "next/link";
 import { Clock, ArrowRight } from "lucide-react";
 import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import api from "@/lib/api";
-import type { Photo } from "@/lib/types";
+
+interface RenderPhoto {
+  id: string;
+  src: string;
+  title: string;
+}
 
 interface LatestUploadsProps {
-  photos?: Photo[];
+  photos?: RenderPhoto[];
 }
 
 export function LatestUploads({ photos: propPhotos }: LatestUploadsProps) {
-  const [photos, setPhotos] = useState<Photo[]>(propPhotos || []);
+  const [photos, setPhotos] = useState<RenderPhoto[]>(propPhotos || []);
 
   useEffect(() => {
     if (propPhotos) return;
     api.get("/photos/latest").then(({ data }) => {
-      const items = Array.isArray(data) ? data : data.items || [];
+      const items = Array.isArray(data) ? data : [];
       setPhotos(items.slice(0, 4));
     }).catch(() => {});
   }, [propPhotos]);
@@ -58,7 +63,7 @@ export function LatestUploads({ photos: propPhotos }: LatestUploadsProps) {
               <Link href={`/gallery/${photo.id}`} className="group block">
                 <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
                   <ProtectedImage
-                    photo={photo}
+                    photo={{ src: photo.src }}
                     alt={photo.title}
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                   />

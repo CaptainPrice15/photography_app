@@ -13,7 +13,7 @@ export function HeroBanner() {
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
           style={{
-            backgroundImage: "url('/images/hero-bg.jpg')",
+            backgroundImage: "url('/images/placeholder.jpg')",
             transform: "scale(1.1)",
           }}
         />
