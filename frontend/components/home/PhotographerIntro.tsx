@@ -20,7 +20,7 @@ export function PhotographerIntro() {
           >
             <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-muted">
               <Image
-                src="/images/photographer.jpg"
+                src="/images/placeholder.jpg"
                 alt="Photographer"
                 fill
                 className="object-cover"
