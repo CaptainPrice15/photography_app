@@ -85,7 +85,7 @@ export default function GalleryPage() {
       return;
     }
     try {
-      await api.post("/favorites/toggle", { photo_id: photoId });
+      await api.post("/favourites/toggle", { photo_id: photoId });
     } catch {
       toast.error("Failed to update favourites");
     }

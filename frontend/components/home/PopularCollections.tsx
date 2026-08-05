@@ -7,17 +7,6 @@ import { Folder, ArrowRight } from "lucide-react";
 import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import api from "@/lib/api";
 
-interface RenderCollection {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  cover: string | null;
-  accent: string | null;
-  accentSoft: string | null;
-  photos: unknown[];
-}
-
 interface Collection {
   id: string;
   name: string;
@@ -34,14 +23,13 @@ export function PopularCollections({ collections: propCollections }: PopularColl
 
   useEffect(() => {
     if (propCollections) return;
-    api.get("/photos/collections").then(({ data }) => {
-      const items = Array.isArray(data) ? data : [];
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      setCollections(items.map((c: RenderCollection) => ({
+    api.get("/albums", { params: { limit: 8 } }).then(({ data }) => {
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setCollections(items.map((c: any) => ({
         id: c.id,
-        name: c.title || c.slug,
-        photo_count: c.photos?.length || 0,
-        cover_url: c.cover ? `${API_URL}${c.cover}` : undefined,
+        name: c.title,
+        photo_count: c.photo_count ?? 0,
+        cover_url: c.cover_photo_url ?? undefined,
       })));
     }).catch(() => {});
   }, [propCollections]);

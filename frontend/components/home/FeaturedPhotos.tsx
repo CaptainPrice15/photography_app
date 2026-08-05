@@ -11,10 +11,10 @@ import api from "@/lib/api";
 
 interface RenderPhoto {
   id: string;
-  src: string;
+  preview_url?: string;
   title: string;
-  collectionId: string;
-  featured: boolean;
+  category_id?: string | null;
+  featured?: boolean;
 }
 
 interface FeaturedPhotosProps {
@@ -58,7 +58,7 @@ export function FeaturedPhotos({ photos: propPhotos }: FeaturedPhotosProps) {
               <Link href={`/gallery/${photo.id}`} className="group block">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
                   <ProtectedImage
-                    photo={{ src: photo.src }}
+                    photo={{ preview_url: photo.preview_url }}
                     alt={photo.title}
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -66,9 +66,9 @@ export function FeaturedPhotos({ photos: propPhotos }: FeaturedPhotosProps) {
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <Eye className="h-10 w-10 text-white" />
                   </div>
-                  {photo.collectionId && (
+                  {photo.category_id && (
                     <Badge className="absolute top-3 left-3" variant="secondary">
-                      {photo.collectionId}
+                      {photo.category_id}
                     </Badge>
                   )}
                 </div>

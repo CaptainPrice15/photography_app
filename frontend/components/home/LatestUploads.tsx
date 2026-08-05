@@ -9,7 +9,7 @@ import api from "@/lib/api";
 
 interface RenderPhoto {
   id: string;
-  src: string;
+  preview_url?: string;
   title: string;
 }
 
@@ -63,7 +63,7 @@ export function LatestUploads({ photos: propPhotos }: LatestUploadsProps) {
               <Link href={`/gallery/${photo.id}`} className="group block">
                 <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
                   <ProtectedImage
-                    photo={{ src: photo.src }}
+                    photo={{ preview_url: photo.preview_url }}
                     alt={photo.title}
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                   />
