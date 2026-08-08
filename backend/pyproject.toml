@@ -27,6 +27,8 @@ dependencies = [
     "pyjwt==2.10.0",
     "aiofiles==24.1.0",
     "bcrypt==4.2.0",
+    "stripe>=11.0.0",
+    "razorpay>=1.4.0",
 ]
 
 [tool.pytest.ini_options]
