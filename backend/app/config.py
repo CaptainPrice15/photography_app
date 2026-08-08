@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "noreply@yourdomain.com"
 
     # CORS
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: List[str] = []
 
     # App
     APP_NAME: str = "PhotoExhibit"
