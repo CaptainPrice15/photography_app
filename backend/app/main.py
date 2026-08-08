@@ -48,6 +48,15 @@ def create_app() -> FastAPI:
     # Include API router
     app.include_router(api_router, prefix="/api/v1")
 
+    @app.api_route("/", methods=["GET", "HEAD"])
+    async def root():
+        return {
+            "message": "Welcome to Photo Exhibition API",
+            "version": settings.APP_VERSION,
+            "docs": "/docs",
+            "health": "/health",
+        }
+
     @app.get("/health")
     async def health_check():
         return {"status": "ok", "version": settings.APP_VERSION}
