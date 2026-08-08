@@ -30,18 +30,18 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS
+    # Custom middleware
+    app.add_middleware(RequestLoggingMiddleware)
+
+    # CORS Middleware (added last to be the outermost wrapper for all requests & preflights)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
-        allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.onrender\.com|http://localhost:\d+",
+        allow_origins=["*"],
+        allow_origin_regex=r".*",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    # Custom middleware
-    app.add_middleware(RequestLoggingMiddleware)
 
     # Error handlers
     register_error_handlers(app)
