@@ -36,8 +36,12 @@ def create_app() -> FastAPI:
     # CORS Middleware (added last to be the outermost wrapper for all requests & preflights)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[],
-        allow_origin_regex=r".*",
+        allow_origins=[
+            "https://photography-app-q4be.vercel.app",
+            "http://localhost:3000",
+            "http://localhost:5173",
+        ],
+        allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.onrender\.com|http://localhost:\d+",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -56,11 +60,12 @@ def create_app() -> FastAPI:
             "version": settings.APP_VERSION,
             "docs": "/docs",
             "health": "/health",
+            "cors_build": "v3_explicit_reflect",
         }
 
     @app.get("/health")
     async def health_check():
-        return {"status": "ok", "version": settings.APP_VERSION}
+        return {"status": "ok", "version": settings.APP_VERSION, "cors_build": "v3_explicit_reflect"}
 
     return app
 
