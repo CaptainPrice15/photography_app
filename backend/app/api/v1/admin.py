@@ -27,7 +27,7 @@ async def list_users(
 @router.put("/users/{user_id}/role", response_model=UserResponse)
 async def update_user_role(
     user_id: str,
-    role: str = Query(..., regex="^(admin|visitor)$"),
+    role: str = Query(..., pattern="^(admin|visitor)$"),
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
