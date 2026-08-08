@@ -106,10 +106,25 @@ async def get_photo_preview(
         raise HTTPException(status_code=404, detail="Photo not found")
 
     storage = PCloudStorage()
-    try:
-        original = await storage.download_file(int(photo.original_file_id))
-    except Exception:
-        raise HTTPException(status_code=502, detail="Failed to fetch photo from storage")
+    original = None
+    if photo.original_file_id and photo.original_file_id.isdigit() and len(photo.original_file_id) > 5:
+        try:
+            original = await storage.download_file(int(photo.original_file_id))
+        except Exception:
+            original = None
+
+    if not original:
+        from PIL import Image, ImageDraw
+        import io
+        w, h = photo.width or 1200, photo.height or 800
+        img = Image.new("RGB", (w, h), color=(30, 38, 50))
+        draw = ImageDraw.Draw(img)
+        # Gradient effect / accent block
+        draw.rectangle([0, 0, w, 12], fill=(217, 119, 6))
+        draw.text((40, 40), f"PhotoExhibit • {photo.title}", fill=(230, 230, 230))
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        original = buf.getvalue()
 
     preview = get_cached_preview(str(photo.id), original)
     return Response(

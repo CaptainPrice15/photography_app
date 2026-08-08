@@ -12,12 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.api.deps import async_session_factory
 from app.core.security import hash_password
-from app.models.album import Album, album_photos
-from app.models.user import User
-from app.repositories.photo_repo import PhotoRepository
-from app.repositories.user_repo import UserRepository
 from app.storage.pcloud import PCloudStorage
 from app.utils.exif import extract_exif
 
@@ -66,6 +61,14 @@ async def ensure_album(db, slug: str, title: str) -> Album:
 
 
 async def main() -> None:
+    from app.api.deps import init_db, async_session_factory
+    await init_db()
+
+    from app.models.album import Album, album_photos
+    from app.models.user import User
+    from app.repositories.photo_repo import PhotoRepository
+    from app.repositories.user_repo import UserRepository
+
     storage = PCloudStorage()
 
     folders = await storage._request(
