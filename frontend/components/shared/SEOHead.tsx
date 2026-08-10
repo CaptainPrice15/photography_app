@@ -15,7 +15,7 @@ export function SEOHead({
   type = "website",
   siteName = "PhotoExhibit",
 }: SEOHeadProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://photography-app-q4be.vercel.app";
   const fullUrl = url ? `${siteUrl}${url}` : siteUrl;
   const imageUrl = image?.startsWith("http") ? image : `${siteUrl}${image}`;
 
