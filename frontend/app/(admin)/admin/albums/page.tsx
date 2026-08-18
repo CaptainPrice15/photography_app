@@ -51,7 +51,7 @@ export default function AlbumsPage() {
       const params: Record<string, string | number> = { page, limit };
       if (debouncedSearch) params.search = debouncedSearch;
 
-      const { data } = await api.get("/albums", { params });
+      const { data } = await api.get("/albums/admin", { params });
       const items = data.items || data;
       setAlbums(Array.isArray(items) ? items : []);
       setTotal(data.total || items.length || 0);

@@ -21,12 +21,14 @@ router = APIRouter(prefix="/albums", tags=["Albums"])
 
 @router.get("", response_model=AlbumListResponse)
 async def list_albums(
+    search: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
+    """Public album list - published albums only, newest first."""
     service = AlbumService()
-    items, total = await service.get_albums(db, page=page, limit=limit)
+    items, total = await service.get_albums(db, page=page, limit=limit, search=search)
     return AlbumListResponse(
         items=[AlbumResponse.model_validate(a) for a in items],
         total=total,
@@ -34,6 +36,52 @@ async def list_albums(
         limit=limit,
         pages=(total + limit - 1) // limit,
     )
+
+
+@router.get("/admin", response_model=AlbumListResponse)
+async def list_all_albums(
+    search: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Admin-only album list - includes drafts/unpublished albums."""
+    service = AlbumService()
+    items, total = await service.get_all_albums(db, page=page, limit=limit, search=search)
+    return AlbumListResponse(
+        items=[AlbumResponse.model_validate(a) for a in items],
+        total=total,
+        page=page,
+        limit=limit,
+        pages=(total + limit - 1) // limit,
+    )
+
+
+@router.get("/admin/{album_id}", response_model=AlbumResponse)
+async def get_album_admin(
+    album_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Admin-only album detail - works for drafts/unpublished albums."""
+    service = AlbumService()
+    album = await service.get_by_id(db, album_id)
+    if not album:
+        raise HTTPException(status_code=404, detail="Album not found")
+    return AlbumResponse.model_validate(album)
+
+
+@router.get("/admin/{album_id}/photos", response_model=list[PhotoResponse])
+async def get_album_photos_admin(
+    album_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Admin-only: all photos in an album, including unpublished photos."""
+    service = AlbumService()
+    photos = await service.get_album_photos(db, album_id, published_only=False)
+    return [PhotoResponse.model_validate(p) for p in photos]
 
 
 @router.get("/featured", response_model=list[AlbumResponse])
@@ -54,6 +102,8 @@ async def get_album(
     service = AlbumService()
     album = await service.get_by_id(db, album_id)
     if not album:
+        raise HTTPException(status_code=404, detail="Album not found")
+    if not album.is_published:
         raise HTTPException(status_code=404, detail="Album not found")
     return AlbumResponse.model_validate(album)
 
@@ -107,9 +157,14 @@ async def get_album_photos(
     album_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Photos belonging to an album, newest first."""
+    """Photos belonging to a published album, newest first."""
     service = AlbumService()
-    photos = await service.repo.get_photos(db, album_id)
+    album = await service.get_by_id(db, album_id)
+    if not album:
+        raise HTTPException(status_code=404, detail="Album not found")
+    if not album.is_published:
+        raise HTTPException(status_code=404, detail="Album not found")
+    photos = await service.get_album_photos(db, album_id, published_only=True)
     return [PhotoResponse.model_validate(p) for p in photos]
 
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import type { Album, PaginatedResponse, Photo } from "@/lib/types";
 
@@ -15,8 +15,10 @@ export function useAlbums(options: UseAlbumsOptions = {}) {
   const [data, setData] = useState<PaginatedResponse<Album> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchAlbums = async () => {
       setIsLoading(true);
       setError(null);
@@ -26,12 +28,14 @@ export function useAlbums(options: UseAlbumsOptions = {}) {
           const { data: res } = await api.get("/albums/featured", {
             params: { limit },
           });
+          if (cancelled) return;
           const items = Array.isArray(res) ? res : [];
           setData({ items, total: items.length, page: 1, limit: items.length, pages: 1 });
         } else {
           const { data: res } = await api.get("/albums", {
             params: { limit },
           });
+          if (cancelled) return;
           setData({
             items: res.items ?? [],
             total: res.total ?? 0,
@@ -41,16 +45,21 @@ export function useAlbums(options: UseAlbumsOptions = {}) {
           });
         }
       } catch {
-        setError("Failed to load albums from backend");
+        if (!cancelled) setError("Failed to load albums from backend");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchAlbums();
-  }, [featured, limit]);
+    return () => {
+      cancelled = true;
+    };
+  }, [featured, limit, reloadKey]);
 
-  return { data, isLoading, error };
+  const refetch = useCallback(() => setReloadKey((key) => key + 1), []);
+
+  return { data, isLoading, error, refetch };
 }
 
 export function useAlbumDetail(albumId: string) {
@@ -58,28 +67,37 @@ export function useAlbumDetail(albumId: string) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!albumId) return;
 
+    let cancelled = false;
     const fetchDetail = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
         const { data: res } = await api.get(`/albums/${albumId}`);
+        if (cancelled) return;
         setAlbum(res);
         const photosRes = await api.get(`/albums/${albumId}/photos`);
+        if (cancelled) return;
         setPhotos(photosRes.data ?? []);
       } catch {
-        setError("Failed to load album details");
+        if (!cancelled) setError("Failed to load album details");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchDetail();
-  }, [albumId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [albumId, reloadKey]);
 
-  return { album, photos, isLoading, error };
+  const refetch = useCallback(() => setReloadKey((key) => key + 1), []);
+
+  return { album, photos, isLoading, error, refetch };
 }

@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.album_repo import AlbumRepository
 from app.models.album import Album
+from app.models.photo import Photo
 from app.schemas.album import AlbumCreate, AlbumUpdate
 
 
@@ -11,13 +12,24 @@ class AlbumService:
         self.repo = AlbumRepository()
 
     async def get_albums(
-        self, db: AsyncSession, page: int = 1, limit: int = 20
+        self, db: AsyncSession, page: int = 1, limit: int = 20, search: Optional[str] = None
     ) -> tuple[list[Album], int]:
         skip = (page - 1) * limit
-        return await self.repo.get_multi(db, skip=skip, limit=limit)
+        return await self.repo.get_public(db, skip=skip, limit=limit, search=search)
+
+    async def get_all_albums(
+        self, db: AsyncSession, page: int = 1, limit: int = 20, search: Optional[str] = None
+    ) -> tuple[list[Album], int]:
+        skip = (page - 1) * limit
+        return await self.repo.get_all(db, skip=skip, limit=limit, search=search)
 
     async def get_by_id(self, db: AsyncSession, album_id: str) -> Optional[Album]:
         return await self.repo.get(db, album_id)
+
+    async def get_album_photos(
+        self, db: AsyncSession, album_id: str, published_only: bool = False
+    ) -> list[Photo]:
+        return await self.repo.get_photos(db, album_id, published_only=published_only)
 
     async def get_by_slug(self, db: AsyncSession, slug: str) -> Optional[Album]:
         return await self.repo.get_by_slug(db, slug)

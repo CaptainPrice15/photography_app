@@ -3,6 +3,7 @@ import { API_URL } from "./constants";
 
 const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
+  timeout: 60000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -22,13 +23,19 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle token refresh
+const RETRYABLE_CODES = new Set(["ERR_NETWORK", "ECONNABORTED", "ECONNRESET", "ETIMEDOUT"]);
+const MAX_RETRIES = 2;
+
+// Response interceptor - handle token refresh + transient network retries
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    if (!originalRequest) return Promise.reject(error);
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isAuthError = error.response?.status === 401 && !originalRequest._retry;
+
+    if (isAuthError) {
       originalRequest._retry = true;
 
       try {
@@ -50,6 +57,20 @@ api.interceptors.response.use(
         localStorage.removeItem("refresh_token");
         window.location.href = "/login";
       }
+    }
+
+    const method = (originalRequest.method || "get").toLowerCase();
+    const retries = originalRequest._retryCount ?? 0;
+    const isRetryable =
+      method === "get" &&
+      retries < MAX_RETRIES &&
+      !error.response &&
+      (RETRYABLE_CODES.has(error.code) || error.message === "Network Error");
+
+    if (isRetryable) {
+      originalRequest._retryCount = retries + 1;
+      await new Promise((resolve) => setTimeout(resolve, 2000 * (retries + 1)));
+      return api(originalRequest);
     }
 
     return Promise.reject(error);

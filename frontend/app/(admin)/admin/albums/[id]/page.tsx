@@ -34,7 +34,7 @@ export default function EditAlbumPage() {
   useEffect(() => {
     const fetchAlbum = async () => {
       try {
-        const { data } = await api.get(`/albums/${albumId}`);
+        const { data } = await api.get(`/albums/admin/${albumId}`);
         setAlbum(data);
         setTitle(data.title);
         setSlug(data.slug);
@@ -42,7 +42,7 @@ export default function EditAlbumPage() {
         setIsPublished(data.is_published);
         setIsFeatured(data.is_featured);
         setCoverPhotoId(data.cover_photo_id || "");
-        const photosRes = await api.get(`/albums/${albumId}/photos`);
+        const photosRes = await api.get(`/albums/admin/${albumId}/photos`);
         setAlbumPhotos(photosRes.data ?? []);
     } catch {
       toast.error("Failed to load album");

@@ -1,4 +1,9 @@
-"""Import photos from pCloud folder 32426733211 (Kedarnath, Sikkim) into Postgres.
+"""Sync albums and photos from pCloud into the database.
+
+For every image-bearing subfolder under the pCloud Photos folder, an album is
+created (title = folder name) and each image file becomes a published photo
+linked to that album. Photos/albums that do not come from pCloud are removed,
+so the frontend only shows pCloud content.
 
 Usage: python -m scripts.import_pcloud
 Idempotent: skips photos whose slug already exists.
@@ -12,21 +17,32 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from sqlalchemy import bindparam, delete, select, text
+
 from app.core.security import hash_password
+from app.models.album import Album, album_photos
+from app.models.photo import Photo
+from app.models.user import User
 from app.storage.pcloud import PCloudStorage
-from app.utils.exif import extract_exif
 
 PCLOUD_ROOT_FOLDER = 32426733211
 ADMIN_EMAIL = "photosback15@gmail.com"
 ADMIN_PASSWORD = "gourabdas123"
-VISITOR_EMAIL = "visitor@test.com"
-VISITOR_PASSWORD = "visitor123"
 PRICE = 25.0
 
+# Only these folders become albums; everything else is ignored/pruned.
 FOLDER_ALBUM_SLUG = {
     "kedarnath": "kedarnath",
     "sikkim": "sikkim",
 }
+
+# Cover photo filename per folder, taken from manifest.json.
+FOLDER_COVER_FILE = {
+    "kedarnath": "IMG20250523192204.jpg",
+    "sikkim": "IMG20231029075117.jpg",
+}
+
+IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tiff")
 
 
 def slugify(name: str) -> str:
@@ -40,8 +56,26 @@ def title_from_filename(filename: str) -> str:
     return words if words else stem
 
 
+async def fetch_manifest_cover(storage: PCloudStorage) -> dict:
+    """Best-effort read of manifest.json at the Photos root -> {folder: filename}."""
+    covers = {}
+    listing = await storage._request("listfolder", params={"folderid": PCLOUD_ROOT_FOLDER})
+    for item in listing.get("metadata", {}).get("contents", []):
+        if item.get("name") == "manifest.json":
+            try:
+                raw = await storage.download_file(int(item["fileid"]))
+                import json
+                manifest = json.loads(raw.decode("utf-8"))
+                for coll in manifest.get("collections", []):
+                    cover = (coll.get("cover") or "").rsplit("/", 1)[-1]
+                    if cover:
+                        covers[coll.get("slug", "").lower()] = cover
+            except Exception as e:
+                print(f"  manifest.json read failed: {e}")
+    return covers
+
+
 async def ensure_album(db, slug: str, title: str) -> Album:
-    from sqlalchemy import select
     result = await db.execute(select(Album).where(Album.slug == slug))
     album = result.scalar_one_or_none()
     if not album:
@@ -60,23 +94,73 @@ async def ensure_album(db, slug: str, title: str) -> Album:
     return album
 
 
+async def prune_non_pcloud(db, allowed_album_slugs: set, allowed_file_ids: set) -> None:
+    """Remove albums not backed by pCloud folders and photos not backed by pCloud files."""
+    albums = (await db.execute(select(Album))).scalars().all()
+    remove_albums = [a for a in albums if a.slug not in allowed_album_slugs]
+
+    for album in remove_albums:
+        await db.execute(delete(album_photos).where(album_photos.c.album_id == album.id))
+    await db.commit()
+
+    photos = (await db.execute(select(Photo))).scalars().all()
+    remove_photo_ids = [
+        p.id
+        for p in photos
+        if not (p.original_file_id or "").isdigit()
+        or int(p.original_file_id) not in allowed_file_ids
+    ]
+    if remove_photo_ids:
+        id_list = list(remove_photo_ids)
+        for table in ("favourites", "comments", "order_items", "exhibition_photos", "album_photos"):
+            try:
+                await db.execute(
+                    text(f"DELETE FROM {table} WHERE photo_id IN :ids").bindparams(
+                        bindparam("ids", expanding=True)
+                    ),
+                    {"ids": id_list},
+                )
+            except Exception as e:
+                print(f"  prune {table}: {e}")
+        # Drop cover references before deleting photos.
+        await db.execute(
+            text("UPDATE albums SET cover_photo_id = NULL WHERE cover_photo_id IN :ids").bindparams(
+                bindparam("ids", expanding=True)
+            ),
+            {"ids": id_list},
+        )
+        await db.commit()
+
+    for album in remove_albums:
+        await db.delete(album)
+    await db.commit()
+
+    for photo in photos:
+        if photo.id in remove_photo_ids:
+            await db.delete(photo)
+    await db.commit()
+
+    if remove_albums:
+        print(f"Pruned albums: {[a.title for a in remove_albums]}")
+    if remove_photo_ids:
+        print(f"Pruned photos: {len(remove_photo_ids)}")
+
+
 async def main() -> None:
     from app.api.deps import init_db, async_session_factory
     await init_db()
 
-    from app.models.album import Album, album_photos
-    from app.models.user import User
     from app.repositories.photo_repo import PhotoRepository
     from app.repositories.user_repo import UserRepository
 
     storage = PCloudStorage()
 
-    folders = await storage._request(
-        "listfolder", params={"folderid": PCLOUD_ROOT_FOLDER}
-    )
-    if folders.get("result") != 0:
-        print(f"ERROR listing root folder: {folders.get('error')}")
+    root = await storage._request("listfolder", params={"folderid": PCLOUD_ROOT_FOLDER})
+    if root.get("result") != 0:
+        print(f"ERROR listing root folder: {root.get('error')}")
         return
+
+    covers = await fetch_manifest_cover(storage)
 
     async with async_session_factory() as db:
         user_repo = UserRepository()
@@ -96,36 +180,23 @@ async def main() -> None:
         else:
             print(f"Admin user exists: {admin.email}")
 
-        visitor = await user_repo.get_by_email(db, VISITOR_EMAIL)
-        if not visitor:
-            visitor = await user_repo.create(
-                db,
-                email=VISITOR_EMAIL,
-                username=VISITOR_EMAIL.split("@")[0],
-                full_name="Test Visitor",
-                hashed_password=hash_password(VISITOR_PASSWORD),
-                role="visitor",
-                is_verified=True,
-                is_active=True,
-            )
-            print(f"Created visitor user: {visitor.email}")
-        else:
-            print(f"Visitor user exists: {visitor.email}")
-
         photo_repo = PhotoRepository()
         created = 0
         skipped = 0
 
-        for subfolder in folders.get("metadata", {}).get("contents", []):
+        allowed_album_slugs = set()
+        allowed_file_ids = set()
+
+        for subfolder in root.get("metadata", {}).get("contents", []):
             if subfolder.get("isfolder") != 1:
                 continue
             folder_name = subfolder.get("name", "")
-            folder_key = folder_name.lower()
-            album_slug = FOLDER_ALBUM_SLUG.get(folder_key)
+            album_slug = FOLDER_ALBUM_SLUG.get(folder_name.lower())
             if not album_slug:
                 print(f"Skipping folder (no album mapping): {folder_name}")
                 continue
 
+            allowed_album_slugs.add(album_slug)
             album = await ensure_album(db, album_slug, folder_name)
             print(f"\nImporting folder: {folder_name} (album {album.slug})")
 
@@ -135,38 +206,33 @@ async def main() -> None:
             files = [
                 f
                 for f in listing.get("metadata", {}).get("contents", [])
-                if f.get("isfolder") == 0 and f.get("name", "").lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+                if f.get("isfolder") == 0
+                and f.get("name", "").lower().endswith(IMAGE_EXTS)
             ]
+            files.sort(key=lambda f: f.get("name", ""))
             print(f"  {len(files)} image files")
+
+            linked_photo_ids = set()
+            cover_photo_id = None
 
             for file in files:
                 name = file["name"]
-                file_id = file["fileid"]
+                file_id = int(file["fileid"])
+                allowed_file_ids.add(file_id)
                 slug = f"{slugify(title_from_filename(name))}_{file_id}"
 
                 existing = await photo_repo.get_by_slug(db, slug)
                 if existing:
                     skipped += 1
+                    linked_photo_ids.add(existing.id)
+                    if cover_photo_id is None and name == covers.get(album_slug):
+                        cover_photo_id = existing.id
                     print(f"  skip (exists): {name}")
                     continue
 
-                print(f"  fetching: {name}")
-                try:
-                    raw = await storage.download_file(int(file_id))
-                except Exception as e:
-                    print(f"  FAIL download: {name}: {e}")
-                    continue
-
-                exif = extract_exif(raw)
                 fmt = name.rsplit(".", 1)[-1].lower()
-
-                from datetime import datetime
-                taken_at = None
-                if exif.taken_at:
-                    try:
-                        taken_at = datetime.strptime(exif.taken_at, "%Y:%m:%d %H:%M:%S")
-                    except ValueError:
-                        pass
+                width = file.get("width") or 1600
+                height = file.get("height") or 1200
 
                 photo = await photo_repo.create(
                     db,
@@ -175,20 +241,20 @@ async def main() -> None:
                     description=None,
                     original_file_id=str(file_id),
                     thumbnail_file_id=None,
-                    width=exif.width or file.get("width", 0) or 1600,
-                    height=exif.height or file.get("height", 0) or 1200,
-                    file_size=file.get("size", len(raw)),
+                    width=width,
+                    height=height,
+                    file_size=file.get("size", 0),
                     format=fmt,
-                    camera_make=exif.camera_make,
-                    camera_model=exif.camera_model,
-                    lens=exif.lens,
-                    focal_length=exif.focal_length,
-                    aperture=exif.aperture,
-                    shutter_speed=exif.shutter_speed,
-                    iso=exif.iso,
-                    taken_at=taken_at,
-                    latitude=exif.latitude,
-                    longitude=exif.longitude,
+                    camera_make=None,
+                    camera_model=None,
+                    lens=None,
+                    focal_length=None,
+                    aperture=None,
+                    shutter_speed=None,
+                    iso=None,
+                    taken_at=None,
+                    latitude=None,
+                    longitude=None,
                     price=PRICE,
                     is_free=False,
                     is_featured=False,
@@ -198,6 +264,10 @@ async def main() -> None:
                     uploaded_by=str(admin.id),
                 )
 
+                linked_photo_ids.add(photo.id)
+                if cover_photo_id is None and name == covers.get(album_slug):
+                    cover_photo_id = photo.id
+
                 await db.execute(
                     album_photos.insert().values(album_id=album.id, photo_id=photo.id, sort_order=0)
                 )
@@ -206,7 +276,32 @@ async def main() -> None:
                 created += 1
                 print(f"  OK: {name} ({photo.id})")
 
-        print(f"\nDone: {created} created, {skipped} skipped")
+            # Link existing photos that are not yet linked to this album.
+            for photo_id in linked_photo_ids:
+                link = await db.execute(
+                    select(album_photos.c.photo_id).where(
+                        album_photos.c.album_id == album.id,
+                        album_photos.c.photo_id == photo_id,
+                    )
+                )
+                if link.scalar_one_or_none() is None:
+                    await db.execute(
+                        album_photos.insert().values(album_id=album.id, photo_id=photo_id, sort_order=0)
+                    )
+            await db.commit()
+
+            if cover_photo_id is None and linked_photo_ids:
+                cover_photo_id = sorted(linked_photo_ids)[0]
+            if cover_photo_id:
+                album.cover_photo_id = cover_photo_id
+            album.photo_count = len(linked_photo_ids)
+            await db.commit()
+            print(f"  album {album.slug}: {len(linked_photo_ids)} photos, cover set")
+
+        print(f"\nImport done: {created} created, {skipped} skipped")
+        print("Pruning non-pCloud content...")
+        await prune_non_pcloud(db, allowed_album_slugs, allowed_file_ids)
+        print("Sync complete.")
 
 
 if __name__ == "__main__":

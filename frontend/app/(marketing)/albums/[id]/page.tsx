@@ -3,15 +3,16 @@
 import { use, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ProtectedImage } from "@/components/photo/ProtectedImage";
 import { PhotoGrid, PhotoLightbox } from "@/components/gallery";
 import { useAlbumDetail } from "@/hooks/useAlbums";
 
 export default function AlbumDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { album, photos, isLoading } = useAlbumDetail(id);
+  const { album, photos, isLoading, error, refetch } = useAlbumDetail(id);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (isLoading) {
@@ -25,6 +26,28 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
               <div key={i} className="aspect-[4/3] bg-muted rounded-2xl" />
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center space-y-4">
+        <h1 className="text-3xl font-bold">Couldn&apos;t Load Album</h1>
+        <p className="text-muted-foreground">{error}</p>
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <Button onClick={refetch} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
+          <Link
+            href="/albums"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-amber-500 text-black font-semibold shadow-md shadow-amber-500/20"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Albums
+          </Link>
         </div>
       </div>
     );

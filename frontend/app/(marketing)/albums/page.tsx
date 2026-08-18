@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { BookOpen, Sparkles } from "lucide-react";
+import { BookOpen, RefreshCw, Sparkles } from "lucide-react";
 import { AlbumGrid } from "@/components/albums";
 import { useAlbums } from "@/hooks/useAlbums";
 import { Button } from "@/components/ui/button";
 
 export default function AlbumsPage() {
   const [filter, setFilter] = useState<"all" | "featured">("all");
-  const { data, isLoading, error } = useAlbums({ featured: filter === "featured" });
+  const { data, isLoading, error, refetch } = useAlbums({ featured: filter === "featured" });
 
   const albums = data?.items || [];
 
@@ -69,8 +69,15 @@ export default function AlbumsPage() {
           ))}
         </div>
       ) : error ? (
-        <div className="text-center py-16 p-8 rounded-3xl border border-dashed border-border/60 bg-muted/20">
+        <div className="text-center py-16 p-8 rounded-3xl border border-dashed border-border/60 bg-muted/20 space-y-4">
           <p className="text-muted-foreground font-medium">{error}</p>
+          <p className="text-sm text-muted-foreground/70">
+            The backend may be waking up. You can try again in a moment.
+          </p>
+          <Button onClick={refetch} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
         </div>
       ) : albums.length === 0 ? (
         <div className="text-center py-16 p-8 rounded-3xl border border-dashed border-border/60 bg-muted/20">

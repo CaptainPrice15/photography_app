@@ -1,5 +1,5 @@
-from typing import Optional, List
-from sqlalchemy import select, func, desc
+from typing import Optional, List, Tuple
+from sqlalchemy import select, func, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -26,14 +26,64 @@ class AlbumRepository(BaseRepository[Album]):
         )
         return result.scalar_one_or_none()
 
+    @staticmethod
+    def _search_filter(search: Optional[str]):
+        if not search:
+            return None
+        pattern = f"%{search.strip()}%"
+        return or_(
+            Album.title.ilike(pattern),
+            Album.slug.ilike(pattern),
+            Album.description.ilike(pattern),
+        )
+
+    async def get_public(
+        self,
+        db: AsyncSession,
+        *,
+        skip: int = 0,
+        limit: int = 20,
+        search: Optional[str] = None,
+    ) -> Tuple[List[Album], int]:
+        query = select(Album).where(Album.is_published == True)
+        search_filter = self._search_filter(search)
+        if search_filter is not None:
+            query = query.where(search_filter)
+        total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar()
+        result = await db.execute(
+            query.order_by(desc(Album.created_at)).offset(skip).limit(limit)
+        )
+        return list(result.scalars().all()), total
+
+    async def get_all(
+        self,
+        db: AsyncSession,
+        *,
+        skip: int = 0,
+        limit: int = 20,
+        search: Optional[str] = None,
+    ) -> Tuple[List[Album], int]:
+        query = select(Album)
+        search_filter = self._search_filter(search)
+        if search_filter is not None:
+            query = query.where(search_filter)
+        total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar()
+        result = await db.execute(
+            query.order_by(desc(Album.created_at)).offset(skip).limit(limit)
+        )
+        return list(result.scalars().all()), total
+
     async def get_photos(
-        self, db: AsyncSession, album_id: str
+        self, db: AsyncSession, album_id: str, published_only: bool = False
     ) -> List[Photo]:
         album = await self.get_with_photos(db, album_id)
         if not album:
             return []
+        photos = album.photos
+        if published_only:
+            photos = [p for p in photos if p.is_published]
         return sorted(
-            album.photos,
+            photos,
             key=lambda p: getattr(p, "created_at", None),
             reverse=True,
         )
